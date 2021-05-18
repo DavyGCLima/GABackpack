@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: mylib
+  jackson:
+    date-format: yyyy-MM-dd
+    deserialization:
+      fail-on-unknown-properties: false
+server:
+  port: 8080
