@@ -19,9 +19,8 @@ public class GAResource {
     public String test( @PathVariable("reproductionRate") Integer reproductionRate,
                         @PathVariable("probabilityMutation") Integer probabilityMutation,
                         @PathVariable("populationLimit") Integer populationLimit,
-                        @PathVariable("maxStorageWight") Integer maxStorageWight,
-                        @PathVariable("storageLimit") Integer storageLimit ) {
-         service.start(reproductionRate, probabilityMutation, populationLimit, maxStorageWight, storageLimit);
+                        @PathVariable("storageLimit") Integer storageLimit) {
+         service.start(reproductionRate, probabilityMutation, populationLimit, storageLimit);
         return "Tested";
     }
 }
