@@ -15,15 +15,27 @@ public class GAService {
 private Set<Integer> generated = new LinkedHashSet<>();
 private Random random = new Random();
 
-private List<Item> generateRandomItems( int populationLimit ) {
+/**
+ * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
+ * Nenhum Item pode ultrapssar o limite da propria mochila por sí apenas
+ * @param populationLimit
+ * @return
+ */
+private List<Item> generateRandomItems( int populationLimit, int storageLimit ) {
   // gera os items que serão usados
   List<Item> items = new ArrayList<>();
   for (int i = 0; i < populationLimit; i++) {
-    items.add(new Item(random.nextInt(100), random.nextFloat(), false));
+    items.add(new Item(random.nextInt(storageLimit), random.nextFloat(), false));
   }
   return items;
 }
 
+/**
+ * Gera uma população inicial aleatória
+ * @param populationLimit tamanho da poulação
+ * @param items a serem utilizados no problema da mochila
+ * @return A população inicial
+ */
 private List<Chromosome> generateFirstPopulation( int populationLimit, List<Item> items ) {
   List<Chromosome> population = new ArrayList<>();
   for (int i = 0; i < populationLimit; i++) {
@@ -43,10 +55,21 @@ private List<Chromosome> generateFirstPopulation( int populationLimit, List<Item
   return population;
 }
 
+/**
+ * Avalia uma população ou parte dela
+ * @param population ou lista a ser avaliada
+ */
 private void evaluete( List<Chromosome> population ) {
   Collections.sort(population);
 }
 
+/**
+ * Seleciona individuos com boas características baseado no método elitista com chance de mesclar com individuos menos
+ * qualifiucados (50/50)
+ * @param population população a ser avaliada
+ * @param reproductionRate taxa de reprodução da população
+ * @return Lista de individuos aptos a se reproduzir
+ */
 private List<Chromosome> select( List<Chromosome> population, int reproductionRate ) {
   evaluete(population);
   int endElit = ((reproductionRate / 2) * 100) / population.size();
@@ -61,6 +84,12 @@ private void reproduce(List<Chromosome> populationToReproduce) {
 
 }
 
+/**
+ * Método principal da evolução, é um metodo recursivo que resultará em uma solução
+ * @param population população a ser utilizada
+ * @param generation geração atual
+ * @param reproductionRate taxa de reprodução
+ */
 private void evolve( List<Chromosome> population, int generation, int reproductionRate ) {
   generated = new LinkedHashSet<>();
   log.info("Geração #%d", generation);
@@ -77,7 +106,7 @@ private void evolve( List<Chromosome> population, int generation, int reproducti
  */
 public void start( int reproductionRate, float probabilityMutation, int populationLimit, int storageLimit ) {
   log.info("Gerando items");
-  List<Item> items = generateRandomItems(populationLimit);
+  List<Item> items = generateRandomItems(populationLimit, storageLimit);
   //gera a primeira geração de soluções
   log.info("Gerando primeir população");
   List<Chromosome> population = generateFirstPopulation(populationLimit, items);
