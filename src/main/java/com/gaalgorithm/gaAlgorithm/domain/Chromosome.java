@@ -16,7 +16,7 @@ private int fitness = 0;
 
 public int generateFitness() {
   int result = 0;
-  float totalWight = 0;
+  int totalWight = 0;
   for (Item item : genes) {
     if(item != null) {
       result = result + item.getCoast();
@@ -24,6 +24,16 @@ public int generateFitness() {
     }
   }
   return (int) (result/totalWight);
+}
+
+public int getWeight() {
+  int totalWeight = 0;
+  for (Item item : genes) {
+    if(item != null) {
+      totalWeight = totalWeight + item.getWeight();
+    }
+  }
+  return totalWeight;
 }
 
 public static List<Chromosome> getRandomPopulation( List<Chromosome> population, int startIndex,
