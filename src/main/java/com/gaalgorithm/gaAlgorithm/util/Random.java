@@ -1,5 +1,7 @@
 package com.gaalgorithm.gaAlgorithm.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class Random {
@@ -21,5 +23,14 @@ public class Random {
 
     }
     return random.nextInt(bound);
+  }
+
+  public static List<Boolean> getRandomBooleanList(int size) {
+    List<Boolean> list = new ArrayList<>(size);
+    java.util.Random random = new java.util.Random();
+    for (int i = 0; i < size; i++) {
+      list.add(random.nextBoolean());
+    }
+    return list;
   }
 }

@@ -12,10 +12,10 @@ import java.util.Objects;
 @NoArgsConstructor
 public class Item implements Serializable {
     private Integer coast;
-    private Float weight;
+    private Integer weight;
     private Boolean used;
 
-    public Item(Integer coast, Float weight, Boolean used) {
+    public Item(int coast, int weight, Boolean used) {
         this.coast = coast;
         this.weight = weight;
         this.used = used;
