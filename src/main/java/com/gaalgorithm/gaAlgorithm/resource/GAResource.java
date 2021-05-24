@@ -9,18 +9,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/ga")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class GAResource {
 
     private final GAService service;
 
-    @GetMapping("/{reproductionRate}/{probabilityMutation}/{populationLimit}/{maxStorageWight}/{storageLimit}")
-    public String test( @PathVariable("reproductionRate") Integer reproductionRate,
+    @GetMapping("/{reproductionRate}/{probabilityMutation}/{populationLimit}/{storageLimit}")
+    public String ga( @PathVariable("reproductionRate") Integer reproductionRate,
                         @PathVariable("probabilityMutation") Integer probabilityMutation,
                         @PathVariable("populationLimit") Integer populationLimit,
                         @PathVariable("storageLimit") Integer storageLimit) {
          service.start(reproductionRate, probabilityMutation, populationLimit, storageLimit);
-        return "Tested";
+        return "wait for the reply in your email";
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "Server ok";
     }
 }

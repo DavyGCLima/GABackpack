@@ -6,12 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -60,23 +55,9 @@ private List<Chromosome> generateFirstPopulation( int populationLimit, List<Item
   log.info("Gerando primeira população");
   List<Chromosome> population = new ArrayList<>(populationLimit);
   for (int i = 0; i < populationLimit; i++) {
-    Chromosome chromosome = new Chromosome();
-    Item[] solution = new Item[6];
-    // reinicia e gera novas posições
-    Set<Integer> generated = new LinkedHashSet<>();
-    for (int j = 0; j < 6; j++) {
-      if (random.nextBoolean()) {
-        solution[j] = items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
-      } else {
-        solution[j] = null;
-      }
-    }
-    for (Item item : solution) {
-      chromosome.getGenes().add(item);
-    }
-    chromosome.setFitness(chromosome.generateFitness());
+    Chromosome chromosome = new Chromosome(items);
     // individuos que não atendem as restrições não são considerados na população
-    if (chromosome.getWeight() > storageLimit) {
+    if (chromosome.getWeight() > storageLimit || chromosome.getWeight() == 0) {
       // individuos não considerados devem ser repostos para tender o tamanho da poulação
       i--;
     } else {
@@ -90,10 +71,11 @@ private List<Chromosome> generateFirstPopulation( int populationLimit, List<Item
  * Avalia uma população ou parte dela
  *
  * @param population ou lista a ser avaliada
+ * @return Chromosome O melhor individuo
  */
 private Chromosome evaluete( List<Chromosome> population ) {
   log.info("Ordenando população");
-  Collections.sort(population, Chromosome::compareTo);
+  Collections.sort(population);
   Chromosome best = population.get(0);
   bestEvaluete = best.generateFitness();
   log.info("Melhor individuo: {}", bestEvaluete);
@@ -107,35 +89,40 @@ private Chromosome evaluete( List<Chromosome> population ) {
  *
  * @param population       população a ser avaliada
  * @param reproductionRate taxa de reprodução da população
- * @param storageLimit     capácidade maxima da mochila
  * @return Lista de individuos aptos a se reproduzir
  */
-private List<Chromosome> select( List<Chromosome> population, int reproductionRate, int storageLimit ) {
-  log.info("Seleção, geração: {}", population.get(0).getGeneration());
+private List<Chromosome> select( List<Chromosome> population, int reproductionRate ) {
+  log.info("Seleção, geração");
   Set<Integer> generated = new LinkedHashSet<>();
   evaluete(population);
   int endElite = ((reproductionRate / 2) * 100) / population.size();
+  log.info("Indice da elite: {}", endElite);
   List<Chromosome> elitePopulation = population.subList(0, endElite);
+  log.info("Tamanho dapoulação elite: {}", elitePopulation.size());
   List<Chromosome> randomPopulation = Chromosome.getRandomPopulation(population, endElite, generated, random, endElite);
+  log.info("Tamanho dapoulação randomica: {}", randomPopulation.size());
   randomPopulation.addAll(elitePopulation);
   return randomPopulation;
 }
 
 /**
- * Remove os piores individuos dessa população
+ * Remove os individuos inválidos
  *
  * @param population   população a ser reduzida
  * @param storageLimit limite da mochila, critério de remoção
  */
-private void removeWorst( List<Chromosome> population, int storageLimit ) {
-  log.info("Eliminando individuos");
-  int eliminated = 0;
-  for (int i = 0; i < population.size(); i++) {
-    if (population.get(i).getWeight() > storageLimit) {
-      population.remove(i);
-    }
+private void removeInvalidChromossomes( List<Chromosome> population, int storageLimit ) {
+  log.info("Eliminando individuos inválidos");
+  int originalSize = population.size();
+  population.removeIf(item -> item.getWeight() > storageLimit);
+  log.info("Individuos inválidos elimados {}", originalSize - population.size());
+}
+
+private void killWorstChromossomes(List<Chromosome> population) {
+  log.info("Eliminando piores da população");
+  for (int i = population.size()/2; i < population.size(); i++) {
+    population.remove(i);
   }
-  log.info("Individuos elimados {}", eliminated);
 }
 
 /**
@@ -145,13 +132,13 @@ private void removeWorst( List<Chromosome> population, int storageLimit ) {
  * @return
  */
 private List<Chromosome> reproduce( List<Chromosome> populationToReproduce ) {
-  log.info("Reproduzindo...");
+  log.info("Reproduzindo... tamanho da população para reproduzir: {}", populationToReproduce.size());
   List<Chromosome> childrens = new ArrayList<>();
   for (int i = 0; i <= populationToReproduce.size() - 2; i++) {
     childrens.addAll(populationToReproduce.get(i).uniformCrossover(populationToReproduce.get(i + 1),
       populationToReproduce.get(i).getGeneration() + 1));
   }
-  log.info("Reprodução terminada");
+  log.info("Reprodução terminada, quantidade de filhos: {}", childrens.size());
   evaluete(childrens);
   return childrens;
 }
@@ -181,29 +168,36 @@ private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
  * @param reproductionRate    taxa de reprodução
  * @param probabilityMutation probabilidade de mutação
  * @param storageLimit        capacidade maxima da mochila
+ * @param bestRate            Nota do melhor individuo da geração anterior
  */
 private void evolve( List<Chromosome> population, int generation, int reproductionRate, int probabilityMutation,
-                     int storageLimit ) {
+                     int storageLimit, int bestRate ) {
   // Critério de parada por número de gerações
   if (generation > 500) {
     findResult(population, generation);
+    return;
   }
   log.info("Geração #{} tamanho da População: {}", generation, population.size());
-  List<Chromosome> populationToReproduce = select(population, reproductionRate, storageLimit);
+  List<Chromosome> populationToReproduce = select(population, reproductionRate);
   List<Chromosome> childrens = reproduce(populationToReproduce);
   mutate(childrens, probabilityMutation);
   log.info("Avaliando filhos");
   evaluete(childrens);
-  removeWorst(childrens, storageLimit);
-  removeWorst(population, storageLimit);
+  removeInvalidChromossomes(childrens, storageLimit);
+  removeInvalidChromossomes(population, storageLimit);
   population.addAll(childrens);
+  killWorstChromossomes(population);
+  int bestValue = evaluete(population).getFitness();
   log.info("Evoluindo população");
-  evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit);
+  log.info("============================================================================================================");
+  evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, bestValue);
 }
 
 private void findResult( List<Chromosome> population, int generation ) {
   log.info("Fim do GA, geração: {}", generation);
   Chromosome best = evaluete(population);
+  log.info("Melhor individuo: {} da geração #{} com peso total de {}", best.getFitness(), best.getGeneration(), best.getWeight());
+  log.debug("Itens usados: {}", best.getGenes());
 }
 
 /**
@@ -221,6 +215,7 @@ public void start( int reproductionRate, int probabilityMutation, int population
   //gera a primeira geração de soluções
 
   List<Chromosome> population = generateFirstPopulation(populationLimit, items, storageLimit);
-  evolve(population, 0, reproductionRate, probabilityMutation, storageLimit);
+  int best = evaluete(population).getFitness();
+  evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, best);
 }
 }
