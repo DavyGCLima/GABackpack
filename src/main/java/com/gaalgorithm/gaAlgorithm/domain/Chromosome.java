@@ -16,7 +16,7 @@ public class Chromosome implements Serializable, Comparable {
   private int generation = 0;
   private int fitness = 0;
 
-  public Chromosome( List<Item> items) {
+  public Chromosome( List<Item> items ) {
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
     Item[] solution = new Item[6];
@@ -27,7 +27,8 @@ public class Chromosome implements Serializable, Comparable {
         solution[j] = items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
       } else if (has && j == 5) {
         // caso a solução ainda não possua nenum item, adiciona um item aleatóriamente
-        solution[random.nextInt(solution.length)] = items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
+        solution[random.nextInt(solution.length)] =
+          items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
       } else {
         solution[j] = null;
       }
@@ -93,7 +94,7 @@ public class Chromosome implements Serializable, Comparable {
     // Excluem soluções inválidas que não usam nenhum item
     boolean onlyNulls1 = genes1.stream().noneMatch(Objects::nonNull);
     boolean onlyNulls2 = genes2.stream().noneMatch(Objects::nonNull);
-    if(onlyNulls1 || onlyNulls2) {
+    if (onlyNulls1 || onlyNulls2) {
       return this.uniformCrossover(parent, generation);
     }
 
