@@ -11,4 +11,5 @@ public class RequestParamsDTO {
   private Integer populationLimit;
   private Integer storageLimit;
   private Integer selectionMode;
+  private String email;
 }

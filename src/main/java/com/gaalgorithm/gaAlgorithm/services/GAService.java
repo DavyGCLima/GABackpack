@@ -214,10 +214,10 @@ public class GAService {
    * @param evolutionHistory    Histórico de evoluções
    */
   private void evolve( List<Chromosome> population, int generation, int reproductionRate, int probabilityMutation,
-                       int storageLimit, List<Float> evolutionHistory ) {
+                       int storageLimit, List<Float> evolutionHistory, int selectionMode, String email ) {
     // Critério de parada por número de gerações
     if (generation > 500) {
-      findResult(population, generation);
+      findResult(population, generation, email);
       return;
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
@@ -235,10 +235,10 @@ public class GAService {
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
-    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory);
+    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory, selectionMode, email);
   }
 
-  private void findResult( List<Chromosome> population, int generation ) {
+  private void findResult( List<Chromosome> population, int generation, String email ) {
     log.info("Fim do GA, geração: {}", generation);
     Chromosome best = evaluete(population);
     log.info("Melhor individuo: {} da geração #{} com peso total de {}", best.getFitness(), best.getGeneration(),
@@ -254,8 +254,9 @@ public class GAService {
    * @param probabilityMutation probabilidade de mutação de um individuo
    * @param populationLimit     tamanho da população
    * @param storageLimit        capacidade da mochila
+   * @poram selectionMode       especifica qual método de seleção será usado
    */
-  public void start( int reproductionRate, int probabilityMutation, int populationLimit, int storageLimit ) {
+  public void start( int reproductionRate, int probabilityMutation, int populationLimit, int storageLimit, int selectionMode, String email ) {
     log.info("Gerando items");
     //usando items iguais para validação
     List<Item> items = generateItems();
@@ -265,6 +266,6 @@ public class GAService {
     float best = evaluete(population).getFitness();
     List<Float> evolutionHistory = new ArrayList<>();
     evolutionHistory.add(best);
-    evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, evolutionHistory);
+    evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, evolutionHistory, selectionMode, email);
   }
 }
