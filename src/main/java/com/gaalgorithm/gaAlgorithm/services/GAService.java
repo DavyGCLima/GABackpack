@@ -26,8 +26,8 @@ public class GAService {
     // gera os items que serão usados
     List<Item> items = new ArrayList<>();
     for (int i = 0; i < populationLimit; i++) {
-      items.add(new Item(random.nextFloat() + random.nextInt(1000), random.nextFloat() + random.nextInt(storageLimit),
-        random.nextFloat() + random.nextInt(1000), false));
+      items.add(new Item(random.nextFloat() + random.nextInt(1000), random.nextFloat() + random.nextInt(storageLimit)
+        , random.nextFloat() + random.nextInt(1000), false));
     }
     return items;
   }
@@ -35,29 +35,29 @@ public class GAService {
   private List<Item> generateItems() {
     // gera os items que serão usados
     List<Item> items = new ArrayList<>();
-    items.add(new Item(12, 33, 200,false));
-    items.add(new Item(24, 66.2f, 309,false));
-    items.add(new Item(5, 78.1f, 190,false));
-    items.add(new Item(176, 15.8f, 525,false));
-    items.add(new Item(90, 24.23f, 602,false));
-    items.add(new Item(101, 49.9f, 808,false));
-    items.add(new Item(78, 90.22f, 209,false));
-    items.add(new Item(209, 25.482f, 738,false));
-    items.add(new Item(728, 69.289f, 28,false));
-    items.add(new Item(28, 35.290f, 93,false));
-    items.add(new Item(90, 9.290f, 873,false));
-    items.add(new Item(28, 24.2978f, 189,false));
-    items.add(new Item(1, 42.9802f, 34,false));
-    items.add(new Item(3, 93.16f, 437,false));
-    items.add(new Item(58, 19.278f, 46,false));
-    items.add(new Item(99, 83.389f, 84,false));
-    items.add(new Item(87, 16.167f, 923,false));
-    items.add(new Item(27, 29.2f, 123,false));
-    items.add(new Item(12, 7.378f, 324,false));
-    items.add(new Item(62, 18.9f, 75,false));
-    items.add(new Item(78, 27.190f, 458,false));
-    items.add(new Item(55, 40.38f, 857,false));
-    items.add(new Item(12, 77.87f, 973,false));
+    items.add(new Item(12, 33, 200, false));
+    items.add(new Item(24, 66.2f, 309, false));
+    items.add(new Item(5, 78.1f, 190, false));
+    items.add(new Item(176, 15.8f, 525, false));
+    items.add(new Item(90, 24.23f, 602, false));
+    items.add(new Item(101, 49.9f, 808, false));
+    items.add(new Item(78, 90.22f, 209, false));
+    items.add(new Item(209, 25.482f, 738, false));
+    items.add(new Item(728, 69.289f, 28, false));
+    items.add(new Item(28, 35.290f, 93, false));
+    items.add(new Item(90, 9.290f, 873, false));
+    items.add(new Item(28, 24.2978f, 189, false));
+    items.add(new Item(1, 42.9802f, 34, false));
+    items.add(new Item(3, 93.16f, 437, false));
+    items.add(new Item(58, 19.278f, 46, false));
+    items.add(new Item(99, 83.389f, 84, false));
+    items.add(new Item(87, 16.167f, 923, false));
+    items.add(new Item(27, 29.2f, 123, false));
+    items.add(new Item(12, 7.378f, 324, false));
+    items.add(new Item(62, 18.9f, 75, false));
+    items.add(new Item(78, 27.190f, 458, false));
+    items.add(new Item(55, 40.38f, 857, false));
+    items.add(new Item(12, 77.87f, 973, false));
     return items;
   }
 
@@ -92,7 +92,7 @@ public class GAService {
    * @return Chromosome O melhor individuo
    */
   private Chromosome evaluete( List<Chromosome> population ) {
-    log.info("Ordenando população");
+    log.info("Ordenando individuos");
     Collections.sort(population);
     Chromosome best = population.get(0);
     bestEvaluete = best.generateFitness();
@@ -111,8 +111,32 @@ public class GAService {
    */
   private List<Chromosome> select( List<Chromosome> population, int reproductionRate ) {
     log.info("Seleção, geração");
-    Set<Integer> generated = new LinkedHashSet<>();
     evaluete(population);
+    return rankingSelection(population, reproductionRate);
+  }
+
+  private List<Chromosome> tournamentSelection( List<Chromosome> population, int reproductionRate ) {
+    log.info("Selação por torneio");
+    int reprodutionNumber = ((reproductionRate) * 100) / population.size();
+    List<Chromosome> winners = new ArrayList<>();
+    for (int i = 0; i < reprodutionNumber; i++) {
+      Set<Integer> generated = new LinkedHashSet<>();
+      List<Chromosome> selectedForTournment = Chromosome.getRandomPopulation(population, 0, generated, random,
+        3);
+      winners.add(evaluete(selectedForTournment));
+    }
+    return winners;
+  }
+
+  /**
+   * Método de seleção por ranking
+   * @param population       população a ser avaliada
+   * @param reproductionRate taxa de reprodução da população
+   * @return Lista de individuos aptos a se reproduzir
+   */
+  private List<Chromosome> rankingSelection( List<Chromosome> population, int reproductionRate ) {
+    log.info("Seleção por ranking");
+    Set<Integer> generated = new LinkedHashSet<>();
     int endElite = ((reproductionRate / 2) * 100) / population.size();
     log.info("Indice da elite: {}", endElite);
     List<Chromosome> elitePopulation = population.subList(0, endElite);
@@ -163,8 +187,8 @@ public class GAService {
   }
 
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
-    int prob = (probabilityMutation * 100) / mutableList.size();
-    log.info("Mutação, probabiliade de: {}", probabilityMutation / 100);
+    float prob = (probabilityMutation * 100) / mutableList.size();
+    log.info("Mutação, probabiliade de: {}", prob);
     Set<Integer> generated = new LinkedHashSet<>();
     Random random = new Random();
     // verifica se um individuo deve sofrer mutação

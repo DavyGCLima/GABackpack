@@ -18,9 +18,10 @@
 	</properties>
 	<dependencies>
 		<dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
+		</dependency>•
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -37,6 +38,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>5.3.6</version>
 		</dependency>
 	</dependencies>
 

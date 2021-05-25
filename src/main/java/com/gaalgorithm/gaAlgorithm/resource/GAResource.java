@@ -19,7 +19,8 @@ public class GAResource {
   public String ga( @PathVariable("reproductionRate") Integer reproductionRate,
                     @PathVariable("probabilityMutation") Integer probabilityMutation,
                     @PathVariable("populationLimit") Integer populationLimit,
-                    @PathVariable("storageLimit") Integer storageLimit ) {
+                    @PathVariable("storageLimit") Integer storageLimit,
+                    @PathVariable Integer selectionMode) {
     service.start(reproductionRate, probabilityMutation, populationLimit, storageLimit);
     return "wait for the reply in your email";
   }
