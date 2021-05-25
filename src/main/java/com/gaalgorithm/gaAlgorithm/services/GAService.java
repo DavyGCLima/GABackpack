@@ -13,7 +13,7 @@ import java.util.*;
 @Slf4j
 public class GAService {
   private Random random = new Random();
-  private int bestEvaluete = 0;
+  private float bestEvaluete = 0;
 
   /**
    * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
@@ -26,7 +26,8 @@ public class GAService {
     // gera os items que serão usados
     List<Item> items = new ArrayList<>();
     for (int i = 0; i < populationLimit; i++) {
-      items.add(new Item(random.nextInt(1000), random.nextInt(storageLimit), false));
+      items.add(new Item(random.nextFloat() + random.nextInt(1000), random.nextFloat() + random.nextInt(storageLimit),
+        random.nextFloat() + random.nextInt(1000), false));
     }
     return items;
   }
@@ -34,12 +35,29 @@ public class GAService {
   private List<Item> generateItems() {
     // gera os items que serão usados
     List<Item> items = new ArrayList<>();
-    items.add(new Item(12, 33, false));
-    items.add(new Item(24, 66, false));
-    items.add(new Item(5, 78, false));
-    items.add(new Item(176, 15, false));
-    items.add(new Item(90, 24, false));
-    items.add(new Item(101, 49, false));
+    items.add(new Item(12, 33, 200,false));
+    items.add(new Item(24, 66.2f, 309,false));
+    items.add(new Item(5, 78.1f, 190,false));
+    items.add(new Item(176, 15.8f, 525,false));
+    items.add(new Item(90, 24.23f, 602,false));
+    items.add(new Item(101, 49.9f, 808,false));
+    items.add(new Item(78, 90.22f, 209,false));
+    items.add(new Item(209, 25.482f, 738,false));
+    items.add(new Item(728, 69.289f, 28,false));
+    items.add(new Item(28, 35.290f, 93,false));
+    items.add(new Item(90, 9.290f, 873,false));
+    items.add(new Item(28, 24.2978f, 189,false));
+    items.add(new Item(1, 42.9802f, 34,false));
+    items.add(new Item(3, 93.16f, 437,false));
+    items.add(new Item(58, 19.278f, 46,false));
+    items.add(new Item(99, 83.389f, 84,false));
+    items.add(new Item(87, 16.167f, 923,false));
+    items.add(new Item(27, 29.2f, 123,false));
+    items.add(new Item(12, 7.378f, 324,false));
+    items.add(new Item(62, 18.9f, 75,false));
+    items.add(new Item(78, 27.190f, 458,false));
+    items.add(new Item(55, 40.38f, 857,false));
+    items.add(new Item(12, 77.87f, 973,false));
     return items;
   }
 
@@ -130,14 +148,14 @@ public class GAService {
    * Reproduz a população recebida
    *
    * @param populationToReproduce população para reproduzir
-   * @return
+   * @param generation            geração atual
+   * @return Filhos gerados
    */
-  private List<Chromosome> reproduce( List<Chromosome> populationToReproduce ) {
+  private List<Chromosome> reproduce( List<Chromosome> populationToReproduce, int generation ) {
     log.info("Reproduzindo... tamanho da população para reproduzir: {}", populationToReproduce.size());
     List<Chromosome> childrens = new ArrayList<>();
     for (int i = 0; i <= populationToReproduce.size() - 2; i++) {
-      childrens.addAll(populationToReproduce.get(i).uniformCrossover(populationToReproduce.get(i + 1),
-        populationToReproduce.get(i).getGeneration() + 1));
+      childrens.addAll(populationToReproduce.get(i).uniformCrossover(populationToReproduce.get(i + 1), generation + 1));
     }
     log.info("Reprodução terminada, quantidade de filhos: {}", childrens.size());
     evaluete(childrens);
@@ -169,10 +187,10 @@ public class GAService {
    * @param reproductionRate    taxa de reprodução
    * @param probabilityMutation probabilidade de mutação
    * @param storageLimit        capacidade maxima da mochila
-   * @param bestRate            Nota do melhor individuo da geração anterior
+   * @param evolutionHistory    Histórico de evoluções
    */
   private void evolve( List<Chromosome> population, int generation, int reproductionRate, int probabilityMutation,
-                       int storageLimit, int bestRate ) {
+                       int storageLimit, List<Float> evolutionHistory ) {
     // Critério de parada por número de gerações
     if (generation > 500) {
       findResult(population, generation);
@@ -180,7 +198,7 @@ public class GAService {
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
     List<Chromosome> populationToReproduce = select(population, reproductionRate);
-    List<Chromosome> childrens = reproduce(populationToReproduce);
+    List<Chromosome> childrens = reproduce(populationToReproduce, generation);
     mutate(childrens, probabilityMutation);
     log.info("Avaliando filhos");
     evaluete(childrens);
@@ -188,11 +206,12 @@ public class GAService {
     removeInvalidChromossomes(population, storageLimit);
     population.addAll(childrens);
     killWorstChromossomes(population);
-    int bestValue = evaluete(population).getFitness();
+    float bestValue = evaluete(population).getFitness();
+    evolutionHistory.add(bestValue);
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
-    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, bestValue);
+    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory);
   }
 
   private void findResult( List<Chromosome> population, int generation ) {
@@ -200,7 +219,8 @@ public class GAService {
     Chromosome best = evaluete(population);
     log.info("Melhor individuo: {} da geração #{} com peso total de {}", best.getFitness(), best.getGeneration(),
       best.getWeight());
-    log.debug("Itens usados: {}", best.getGenes());
+    log.info("Quantidade de itens usados: {}", best.getGenes().size());
+    log.info("Itens usados: {}", best.getGenes());
   }
 
   /**
@@ -218,7 +238,9 @@ public class GAService {
     //gera a primeira geração de soluções
 
     List<Chromosome> population = generateFirstPopulation(populationLimit, items, storageLimit);
-    int best = evaluete(population).getFitness();
-    evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, best);
+    float best = evaluete(population).getFitness();
+    List<Float> evolutionHistory = new ArrayList<>();
+    evolutionHistory.add(best);
+    evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, evolutionHistory);
   }
 }

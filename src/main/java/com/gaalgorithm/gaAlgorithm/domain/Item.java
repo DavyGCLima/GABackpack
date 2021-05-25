@@ -11,14 +11,21 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 public class Item implements Serializable {
-  private Integer coast;
-  private Integer weight;
+  private Float coast;
+  private Float utility;
+  private Float weight;
   private Boolean used;
 
-  public Item( int coast, int weight, Boolean used ) {
+  public Item( float coast, float weight, float utility, Boolean used ) {
     this.coast = coast;
     this.weight = weight;
+    this.utility = utility;
     this.used = used;
+  }
+
+  @Override
+  public String toString() {
+    return "Item{" + "coast=" + coast + ", utility=" + utility + ", weight=" + weight + ", used=" + used + '}';
   }
 
   @Override

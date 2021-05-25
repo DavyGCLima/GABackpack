@@ -4,6 +4,7 @@ import com.gaalgorithm.gaAlgorithm.util.Random;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
 import java.util.*;
@@ -11,10 +12,11 @@ import java.util.*;
 @Getter
 @Setter
 @NoArgsConstructor
+@Slf4j
 public class Chromosome implements Serializable, Comparable {
   private List<Item> genes = new ArrayList<>();
   private int generation = 0;
-  private int fitness = 0;
+  private float fitness = 0;
 
   public Chromosome( List<Item> items ) {
     Set<Integer> generated = new LinkedHashSet<>();
@@ -39,24 +41,25 @@ public class Chromosome implements Serializable, Comparable {
     this.setFitness(this.generateFitness());
   }
 
-  public int generateFitness() {
-    int result = 0;
-    int totalWight = 0;
+  public float generateFitness() {
+    float result = 0;
+    float totalWight = 0;
     for (Item item : genes) {
       if (item != null) {
-        result = result + item.getCoast();
+        result = result + item.getUtility() / item.getWeight();
         totalWight = totalWight + item.getWeight();
       }
     }
     if (totalWight == 0) {
       System.out.println("Problem here");
+      log.error("Weight 0, chromosome {} generation: {}", this.toString(), this.getGeneration());
       return 0;
     }
-    return (result / totalWight);
+    return result;
   }
 
-  public int getWeight() {
-    int totalWeight = 0;
+  public float getWeight() {
+    float totalWeight = 0;
     for (Item item : genes) {
       if (item != null) {
         totalWeight = totalWeight + item.getWeight();
