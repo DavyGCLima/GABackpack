@@ -1,0 +1,7 @@
+version: '2'
+services:
+  ga-rabbitmq:
+    extends:
+      file: rabbitmq.yml
+      service: rabbitmq
+    container_name: ga-rabbitmq
