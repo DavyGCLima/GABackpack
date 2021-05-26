@@ -2,11 +2,18 @@ package com.gaalgorithm.gaAlgorithm.services;
 
 import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
+import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
+import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +21,8 @@ import java.util.*;
 public class GAService {
   private Random random = new Random();
   private float bestEvaluete = 0;
+
+  private final ProdutorServico produtorServico;
 
   /**
    * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
@@ -245,27 +254,32 @@ public class GAService {
       best.getWeight());
     log.info("Quantidade de itens usados: {}", best.getGenes().size());
     log.info("Itens usados: {}", best.getGenes());
+    enviarEmail(email, best);
   }
 
-  /**
-   * Inicia o algoritimo
-   *
-   * @param reproductionRate    taxa de reprodução
-   * @param probabilityMutation probabilidade de mutação de um individuo
-   * @param populationLimit     tamanho da população
-   * @param storageLimit        capacidade da mochila
-   * @poram selectionMode       especifica qual método de seleção será usado
-   */
-  public void start( int reproductionRate, int probabilityMutation, int populationLimit, int storageLimit, int selectionMode, String email ) {
+  private void enviarEmail(String email, Chromosome best) {
+    EmailDTO emailDTO = new EmailDTO();
+    emailDTO.setDestinatario(email);
+    emailDTO.setCorpo(best.toString());
+    emailDTO.setAssunto("Resultado do algoritmo");
+    produtorServico.enviarEmail(emailDTO);
+  }
+
+  public void start(RequestParamsDTO paramsDTO) {
     log.info("Gerando items");
     //usando items iguais para validação
     List<Item> items = generateItems();
     //gera a primeira geração de soluções
 
-    List<Chromosome> population = generateFirstPopulation(populationLimit, items, storageLimit);
+    List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items, paramsDTO.getStorageLimit());
     float best = evaluete(population).getFitness();
     List<Float> evolutionHistory = new ArrayList<>();
     evolutionHistory.add(best);
-    evolve(population, 0, reproductionRate, probabilityMutation, storageLimit, evolutionHistory, selectionMode, email);
+    evolve(population, 0,
+            paramsDTO.getReproductionRate(),
+            paramsDTO.getProbabilityMutation(),
+            paramsDTO.getStorageLimit(),
+            evolutionHistory, paramsDTO.getSelectionMode(), paramsDTO.getEmail());
   }
+
 }
