@@ -1,9 +1,34 @@
+application:
+  appName: GABackPack
+  mail:
+    endereco-remetente: chrysthian.moizes@basis.com.br
+    nome-remetente: Chrysthian
 spring:
   application:
-    name: mylib
+    name: GABackPack
+  cloud:
+    stream:
+      bindings:
+        mailer:
+          destination: mailer
+        gabackpack:
+          destination: gabackpack
   jackson:
     date-format: yyyy-MM-dd
     deserialization:
       fail-on-unknown-properties: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: teste@gmail.com
+    password: 1234
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          quitwait: false
 server:
   port: 8080
