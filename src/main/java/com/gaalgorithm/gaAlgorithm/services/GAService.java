@@ -101,11 +101,11 @@ public class GAService {
    * @return Chromosome O melhor individuo
    */
   private Chromosome evaluete( List<Chromosome> population ) {
-    log.info("Ordenando individuos");
+    log.debug("Ordenando individuos");
     Collections.sort(population);
     Chromosome best = population.get(0);
     bestEvaluete = best.generateFitness();
-    log.info("Melhor individuo: {}", bestEvaluete);
+    log.debug("Melhor individuo: {}", bestEvaluete);
     return best;
   }
 
@@ -116,11 +116,15 @@ public class GAService {
    *
    * @param population       população a ser avaliada
    * @param reproductionRate taxa de reprodução da população
+   * @param selectionMode    modo de seleção, operador de seleção
    * @return Lista de individuos aptos a se reproduzir
    */
-  private List<Chromosome> select( List<Chromosome> population, int reproductionRate ) {
-    log.info("Seleção, geração");
+  private List<Chromosome> select( List<Chromosome> population, int reproductionRate, int selectionMode ) {
+    log.info("Seleção, Modo: {}", selectionMode);
     evaluete(population);
+    if(selectionMode != 0) {
+      return tournamentSelection(population, reproductionRate);
+    }
     return rankingSelection(population, reproductionRate);
   }
 
@@ -230,7 +234,7 @@ public class GAService {
       return;
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
-    List<Chromosome> populationToReproduce = select(population, reproductionRate);
+    List<Chromosome> populationToReproduce = select(population, reproductionRate, selectionMode);
     List<Chromosome> childrens = reproduce(populationToReproduce, generation);
     mutate(childrens, probabilityMutation);
     log.info("Avaliando filhos");
