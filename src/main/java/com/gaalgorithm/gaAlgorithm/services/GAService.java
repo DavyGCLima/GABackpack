@@ -19,8 +19,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 public class GAService {
-  private Random random = new Random();
-  private float bestEvaluete = 0;
+  private final Random random = new Random();
 
   private final ProdutorServico produtorServico;
 
@@ -28,8 +27,9 @@ public class GAService {
    * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
    * Nenhum Item pode ultrapssar o limite da propria mochila por sí apenas
    *
-   * @param populationLimit
-   * @return
+   * @param populationLimit limite da população
+   * @param storageLimit    limite da mochila
+   * @return itens a serem usados
    */
   private List<Item> generateRandomItems( int populationLimit, int storageLimit ) {
     // gera os items que serão usados
@@ -104,7 +104,7 @@ public class GAService {
     log.debug("Ordenando individuos");
     Collections.sort(population);
     Chromosome best = population.get(0);
-    bestEvaluete = best.generateFitness();
+    float bestEvaluete = best.generateFitness();
     log.debug("Melhor individuo: {}", bestEvaluete);
     return best;
   }
@@ -122,7 +122,7 @@ public class GAService {
   private List<Chromosome> select( List<Chromosome> population, int reproductionRate, int selectionMode ) {
     log.info("Seleção, Modo: {}", selectionMode);
     evaluete(population);
-    if(selectionMode != 0) {
+    if (selectionMode != 0) {
       return tournamentSelection(population, reproductionRate);
     }
     return rankingSelection(population, reproductionRate);
@@ -134,8 +134,7 @@ public class GAService {
     List<Chromosome> winners = new ArrayList<>();
     for (int i = 0; i < reprodutionNumber; i++) {
       Set<Integer> generated = new LinkedHashSet<>();
-      List<Chromosome> selectedForTournment = Chromosome.getRandomPopulation(population, 0, generated, random,
-        3);
+      List<Chromosome> selectedForTournment = Chromosome.getRandomPopulation(population, 0, generated, random, 3);
       winners.add(evaluete(selectedForTournment));
     }
     return winners;
@@ -143,6 +142,7 @@ public class GAService {
 
   /**
    * Método de seleção por ranking
+   *
    * @param population       população a ser avaliada
    * @param reproductionRate taxa de reprodução da população
    * @return Lista de individuos aptos a se reproduzir
@@ -176,6 +176,7 @@ public class GAService {
 
   private void killWorstChromossomes( List<Chromosome> population ) {
     log.info("Eliminando piores da população");
+    //chasisna
     for (int i = population.size() / 2; i < population.size(); i++) {
       population.remove(i);
     }
@@ -186,13 +187,20 @@ public class GAService {
    *
    * @param populationToReproduce população para reproduzir
    * @param generation            geração atual
+   * @param reproductionMode      Modo de reprodução, 1 para cruzamento de dois pontos, 0 para cruzamento uniforme
    * @return Filhos gerados
    */
-  private List<Chromosome> reproduce( List<Chromosome> populationToReproduce, int generation ) {
+  private List<Chromosome> reproduce( List<Chromosome> populationToReproduce, int generation, int reproductionMode ) {
     log.info("Reproduzindo... tamanho da população para reproduzir: {}", populationToReproduce.size());
     List<Chromosome> childrens = new ArrayList<>();
     for (int i = 0; i <= populationToReproduce.size() - 2; i++) {
-      childrens.addAll(populationToReproduce.get(i).uniformCrossover(populationToReproduce.get(i + 1), generation + 1));
+      if (reproductionMode != 0) {
+        childrens.addAll(populationToReproduce.get(i).twoPointsCrossover(populationToReproduce.get(i + 1),
+          generation + 1));
+      } else {
+        childrens.addAll(populationToReproduce.get(i).uniformCrossover(populationToReproduce.get(i + 1),
+          generation + 1));
+      }
     }
     log.info("Reprodução terminada, quantidade de filhos: {}", childrens.size());
     evaluete(childrens);
@@ -225,9 +233,11 @@ public class GAService {
    * @param probabilityMutation probabilidade de mutação
    * @param storageLimit        capacidade maxima da mochila
    * @param evolutionHistory    Histórico de evoluções
+   * @param reproductionMode    Modo de reprodução
    */
   private void evolve( List<Chromosome> population, int generation, int reproductionRate, int probabilityMutation,
-                       int storageLimit, List<Float> evolutionHistory, int selectionMode, String email ) {
+                       int storageLimit, List<Float> evolutionHistory, int selectionMode, String email,
+                       int reproductionMode ) {
     // Critério de parada por número de gerações
     if (generation > 500) {
       findResult(population, generation, email);
@@ -235,20 +245,21 @@ public class GAService {
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
     List<Chromosome> populationToReproduce = select(population, reproductionRate, selectionMode);
-    List<Chromosome> childrens = reproduce(populationToReproduce, generation);
+    List<Chromosome> childrens = reproduce(populationToReproduce, generation, reproductionMode);
     mutate(childrens, probabilityMutation);
     log.info("Avaliando filhos");
-    evaluete(childrens);
     removeInvalidChromossomes(childrens, storageLimit);
     removeInvalidChromossomes(population, storageLimit);
     population.addAll(childrens);
+    evaluete(population);
     killWorstChromossomes(population);
     float bestValue = evaluete(population).getFitness();
     evolutionHistory.add(bestValue);
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
-    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory, selectionMode, email);
+    evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory,
+      selectionMode, email, reproductionMode);
   }
 
   private void findResult( List<Chromosome> population, int generation, String email ) {
@@ -257,11 +268,11 @@ public class GAService {
     log.info("Melhor individuo: {} da geração #{} com peso total de {}", best.getFitness(), best.getGeneration(),
       best.getWeight());
     log.info("Quantidade de itens usados: {}", best.getGenes().size());
-    log.info("Itens usados: {}", best.getGenes());
+    log.debug("Itens usados: {}", best.getGenes());
     enviarEmail(email, best);
   }
 
-  private void enviarEmail(String email, Chromosome best) {
+  private void enviarEmail( String email, Chromosome best ) {
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
     emailDTO.setCorpo(best.toString());
@@ -269,21 +280,20 @@ public class GAService {
     produtorServico.enviarEmail(emailDTO);
   }
 
-  public void start(RequestParamsDTO paramsDTO) {
+  public void start( RequestParamsDTO paramsDTO ) {
     log.info("Gerando items");
     //usando items iguais para validação
     List<Item> items = generateItems();
     //gera a primeira geração de soluções
 
-    List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items, paramsDTO.getStorageLimit());
+    List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items,
+      paramsDTO.getStorageLimit());
     float best = evaluete(population).getFitness();
     List<Float> evolutionHistory = new ArrayList<>();
     evolutionHistory.add(best);
-    evolve(population, 0,
-            paramsDTO.getReproductionRate(),
-            paramsDTO.getProbabilityMutation(),
-            paramsDTO.getStorageLimit(),
-            evolutionHistory, paramsDTO.getSelectionMode(), paramsDTO.getEmail());
+    evolve(population, 0, paramsDTO.getReproductionRate(), paramsDTO.getProbabilityMutation(),
+      paramsDTO.getStorageLimit(), evolutionHistory, paramsDTO.getSelectionMode(), paramsDTO.getEmail(),
+      paramsDTO.getReproductionMode());
   }
 
 }

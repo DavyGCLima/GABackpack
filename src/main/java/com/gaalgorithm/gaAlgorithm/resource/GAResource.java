@@ -21,7 +21,7 @@ public class GAResource {
   @PostMapping
   public String ga2( @RequestBody RequestParamsDTO paramsDTO) {
     produtorServico.initialize(paramsDTO);
-    return "wait for the reply in your email";
+    return "Aguarde o resultado em seu email";
   }
 
   @GetMapping("/test")

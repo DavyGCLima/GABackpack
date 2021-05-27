@@ -13,5 +13,6 @@ public class RequestParamsDTO implements Serializable {
   private Integer populationLimit;
   private Integer storageLimit;
   private Integer selectionMode;
+  private Integer reproductionMode;
   private String email;
 }
