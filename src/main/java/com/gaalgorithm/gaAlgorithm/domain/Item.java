@@ -7,6 +7,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Define um gene
+ */
 @Getter
 @Setter
 @NoArgsConstructor

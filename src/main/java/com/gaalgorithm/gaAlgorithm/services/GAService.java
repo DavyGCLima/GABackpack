@@ -128,6 +128,12 @@ public class GAService {
     return rankingSelection(population, reproductionRate);
   }
 
+  /**
+   * Seleção por torneio
+   * @param population população a participar
+   * @param reproductionRate taxa de reprodução
+   * @return população selecionada
+   */
   private List<Chromosome> tournamentSelection( List<Chromosome> population, int reproductionRate ) {
     log.info("Selação por torneio");
     int reprodutionNumber = ((reproductionRate) * 100) / population.size();
@@ -174,6 +180,10 @@ public class GAService {
     log.info("Individuos inválidos elimados {}", originalSize - population.size());
   }
 
+  /**
+   * Retira os piores individuos de uma popualção
+   * @param population população a ser limpa
+   */
   private void killWorstChromossomes( List<Chromosome> population ) {
     log.info("Eliminando piores da população");
     //chasisna
@@ -207,6 +217,11 @@ public class GAService {
     return childrens;
   }
 
+  /**
+   * Pode realizar uma mutação sobre uma lista de individuos
+   * @param mutableList individuos que podem sofrer mutação
+   * @param probabilityMutation probabilidade de mutação (referência)
+   */
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
     float prob = (probabilityMutation * 100) / mutableList.size();
     log.info("Mutação, probabiliade de: {}", prob);
@@ -262,16 +277,26 @@ public class GAService {
       selectionMode, email, reproductionMode);
   }
 
+  /**
+   * Fim do Algoritimo genético, encontra a melhor solução
+   * @param population população
+   * @param generation geração atual
+   * @param email de referencia para envio
+   */
   private void findResult( List<Chromosome> population, int generation, String email ) {
     log.info("Fim do GA, geração: {}", generation);
     Chromosome best = evaluete(population);
-    log.info("Melhor individuo: {} da geração #{} com peso total de {}", best.getFitness(), best.getGeneration(),
-      best.getWeight());
-    log.info("Quantidade de itens usados: {}", best.getGenes().size());
+    log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(), best.getGeneration(),
+      best.getWeight(), best.getCountItemUsed());
     log.debug("Itens usados: {}", best.getGenes());
     enviarEmail(email, best);
   }
 
+  /**
+   * Envia um email com o resultado
+   * @param email de destino
+   * @param best melhor solução
+   */
   private void enviarEmail( String email, Chromosome best ) {
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
@@ -280,6 +305,10 @@ public class GAService {
     produtorServico.enviarEmail(emailDTO);
   }
 
+  /**
+   * Inicia o Algoritimo gerando a primeira população
+   * @param paramsDTO
+   */
   public void start( RequestParamsDTO paramsDTO ) {
     log.info("Gerando items");
     //usando items iguais para validação

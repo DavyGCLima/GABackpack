@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Classe utilitária
+ */
 public class Random {
   public static int getNextRandom( Set<Integer> generated, int bound, int max, java.util.Random random ) {
     while (generated.size() < max) {

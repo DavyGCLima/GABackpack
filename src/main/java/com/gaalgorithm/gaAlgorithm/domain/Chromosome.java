@@ -41,12 +41,16 @@ public class Chromosome implements Serializable, Comparable {
     this.setFitness(this.generateFitness());
   }
 
+  /**
+   * Função Objetivo
+   * @return retorna o valor deste individuo
+   */
   public float generateFitness() {
     float result = 0;
     float totalWight = 0;
     for (Item item : genes) {
       if (item != null) {
-        result = result + item.getUtility() / item.getWeight();
+        result = result + (item.getUtility() / item.getCoast());
         totalWight = totalWight + item.getWeight();
       }
     }
@@ -58,6 +62,22 @@ public class Chromosome implements Serializable, Comparable {
     return result;
   }
 
+  /**
+   * Conta os itens usados
+   * @return total de itens usados
+   */
+  public int getCountItemUsed() {
+    int total = 0;
+    for (Item gene : this.getGenes()) {
+      if(gene != null) total++;
+    }
+    return total;
+  }
+
+  /**
+   * Calcula o peso total deste individuo
+   * @return O peso total
+   */
   public float getWeight() {
     float totalWeight = 0;
     for (Item item : genes) {
@@ -68,6 +88,15 @@ public class Chromosome implements Serializable, Comparable {
     return totalWeight;
   }
 
+  /**
+   * Cira uma sublista aleatória da popualção
+   * @param population de referência
+   * @param startIndex indice do inicio da sublista
+   * @param generated array que guarda itens randomicos usados
+   * @param random objeto que permite a aleatóriedade
+   * @param total quantidade de individuos da sublista
+   * @return
+   */
   public static List<Chromosome> getRandomPopulation( List<Chromosome> population, int startIndex,
                                                       Set<Integer> generated, java.util.Random random, int total ) {
     List<Chromosome> randomSelected = new ArrayList<>();
@@ -78,6 +107,12 @@ public class Chromosome implements Serializable, Comparable {
     return randomSelected;
   }
 
+  /**
+   * Reprodução corssover uniforme, faz a troca de todos os cromossomos de um individuo com o atual
+   * @param parent individuo de referência para o cruzamento
+   * @param generation geração atual
+   * @return dois filhos resultantes do cruzamento deste individuo com o parent
+   */
   public List<Chromosome> uniformCrossover( Chromosome parent, int generation ) {
     List<Chromosome> childrens = new ArrayList<>(2);
     List<Boolean> sortedList = Random.getRandomBooleanList(this.getGenes().size());
@@ -114,6 +149,14 @@ public class Chromosome implements Serializable, Comparable {
     return childrens;
   }
 
+  /**
+   * Reprodução cruzada de dois pontos.
+   * <p>Reproduz os individuos com base em dois pontos sortidos no cromossomo, as secções geradas serão trocadas
+   * entre os individuos para gerar os descendentes</p>
+   * @param parent outro pai de referência
+   * @param generation geração atual
+   * @return Dois filhos resultados do cruzamento deste individuo com o parent
+   */
   public List<Chromosome> twoPointsCrossover( Chromosome parent, int generation ) {
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
