@@ -4,24 +4,29 @@ import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
 import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
 import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameMappingStrategy;
+import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GAService {
   private final Random random = new Random();
-
+  List defaultItems = new ArrayList<>();
   private final ProdutorServico produtorServico;
+  private long execTime;
 
   /**
    * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
@@ -41,8 +46,7 @@ public class GAService {
     return items;
   }
 
-  private List<Item> generateItems() {
-    // gera os items que serão usados
+  private List<Item> getStaticItems() {
     List<Item> items = new ArrayList<>();
     items.add(new Item(12, 33, 200, false));
     items.add(new Item(24, 66.2f, 309, false));
@@ -67,7 +71,18 @@ public class GAService {
     items.add(new Item(78, 27.190f, 458, false));
     items.add(new Item(55, 40.38f, 857, false));
     items.add(new Item(12, 77.87f, 973, false));
+    defaultItems = items;
     return items;
+  }
+
+  private List<Item> generateItems( Optional<List<Item>> items ) {
+    if (defaultItems.size() > 0) return defaultItems;
+    // gera os items que serão usados
+    if (items.isPresent() && items.get().size() > 0) {
+      defaultItems = items.get();
+      return defaultItems;
+    }
+    return getStaticItems();
   }
 
   /**
@@ -119,7 +134,7 @@ public class GAService {
    * @param selectionMode    modo de seleção, operador de seleção
    * @return Lista de individuos aptos a se reproduzir
    */
-  private List<Chromosome> select( List<Chromosome> population, int reproductionRate, int selectionMode ) {
+  private List<Chromosome> select( List<Chromosome> population, Integer reproductionRate, int selectionMode ) {
     log.info("Seleção, Modo: {}", selectionMode);
     evaluete(population);
     if (selectionMode != 0) {
@@ -130,13 +145,14 @@ public class GAService {
 
   /**
    * Seleção por torneio
-   * @param population população a participar
+   *
+   * @param population       população a participar
    * @param reproductionRate taxa de reprodução
    * @return população selecionada
    */
-  private List<Chromosome> tournamentSelection( List<Chromosome> population, int reproductionRate ) {
+  private List<Chromosome> tournamentSelection( List<Chromosome> population, Integer reproductionRate ) {
     log.info("Selação por torneio");
-    int reprodutionNumber = ((reproductionRate) * 100) / population.size();
+    Float reprodutionNumber = ((float) reproductionRate / (float) 100) * population.size();
     List<Chromosome> winners = new ArrayList<>();
     for (int i = 0; i < reprodutionNumber; i++) {
       Set<Integer> generated = new LinkedHashSet<>();
@@ -156,12 +172,12 @@ public class GAService {
   private List<Chromosome> rankingSelection( List<Chromosome> population, int reproductionRate ) {
     log.info("Seleção por ranking");
     Set<Integer> generated = new LinkedHashSet<>();
-    int endElite = ((reproductionRate / 2) * 100) / population.size();
+    Float endElite = (((float) reproductionRate / 2) / 100) * population.size();
     log.info("Indice da elite: {}", endElite);
-    List<Chromosome> elitePopulation = population.subList(0, endElite);
+    List<Chromosome> elitePopulation = population.subList(0, endElite.intValue());
     log.info("Tamanho dapoulação elite: {}", elitePopulation.size());
-    List<Chromosome> randomPopulation = Chromosome.getRandomPopulation(population, endElite, generated, random,
-      endElite);
+    List<Chromosome> randomPopulation = Chromosome.getRandomPopulation(population, endElite.intValue(), generated,
+      random, endElite.intValue());
     log.info("Tamanho dapoulação randomica: {}", randomPopulation.size());
     randomPopulation.addAll(elitePopulation);
     return randomPopulation;
@@ -182,13 +198,15 @@ public class GAService {
 
   /**
    * Retira os piores individuos de uma popualção
+   *
    * @param population população a ser limpa
    */
-  private void killWorstChromossomes( List<Chromosome> population ) {
+  private void killWorstChromossomes( List<Chromosome> population, int count ) {
     log.info("Eliminando piores da população");
-    //chasisna
-    for (int i = population.size() / 2; i < population.size(); i++) {
+    Float countDelete = ((float) count / 100) * population.size();
+    for (int i = population.size() - countDelete.intValue(); countDelete.intValue() > 0; i--) {
       population.remove(i);
+      countDelete--;
     }
   }
 
@@ -219,7 +237,8 @@ public class GAService {
 
   /**
    * Pode realizar uma mutação sobre uma lista de individuos
-   * @param mutableList individuos que podem sofrer mutação
+   *
+   * @param mutableList         individuos que podem sofrer mutação
    * @param probabilityMutation probabilidade de mutação (referência)
    */
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
@@ -234,7 +253,7 @@ public class GAService {
         Chromosome selectedToMutate = mutableList.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated
           , mutableList.size(), 1, random));
         selectedToMutate.getGenes().set(random.nextInt(selectedToMutate.getGenes().size()),
-          generateItems().get(random.nextInt(selectedToMutate.getGenes().size())));
+          generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size())));
       }
     }
   }
@@ -267,7 +286,7 @@ public class GAService {
     removeInvalidChromossomes(population, storageLimit);
     population.addAll(childrens);
     evaluete(population);
-    killWorstChromossomes(population);
+    killWorstChromossomes(population, reproductionRate);
     float bestValue = evaluete(population).getFitness();
     evolutionHistory.add(bestValue);
     log.info("Evoluindo população");
@@ -279,23 +298,26 @@ public class GAService {
 
   /**
    * Fim do Algoritimo genético, encontra a melhor solução
+   *
    * @param population população
    * @param generation geração atual
-   * @param email de referencia para envio
+   * @param email      de referencia para envio
    */
   private void findResult( List<Chromosome> population, int generation, String email ) {
-    log.info("Fim do GA, geração: {}", generation);
+    long endTime = System.nanoTime();
+    log.info("Fim do GA, geração: {}, tempo de execução: {}", generation, endTime - execTime);
     Chromosome best = evaluete(population);
-    log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(), best.getGeneration(),
-      best.getWeight(), best.getCountItemUsed());
+    log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
+      best.getGeneration(), best.getWeight(), best.getCountItemUsed());
     log.debug("Itens usados: {}", best.getGenes());
     enviarEmail(email, best);
   }
 
   /**
    * Envia um email com o resultado
+   *
    * @param email de destino
-   * @param best melhor solução
+   * @param best  melhor solução
    */
   private void enviarEmail( String email, Chromosome best ) {
     EmailDTO emailDTO = new EmailDTO();
@@ -307,12 +329,14 @@ public class GAService {
 
   /**
    * Inicia o Algoritimo gerando a primeira população
+   *
    * @param paramsDTO
    */
   public void start( RequestParamsDTO paramsDTO ) {
+    execTime = System.nanoTime();
     log.info("Gerando items");
     //usando items iguais para validação
-    List<Item> items = generateItems();
+    List<Item> items = generateItems(paramsDTO.getItems());
     //gera a primeira geração de soluções
 
     List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items,
