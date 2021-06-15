@@ -223,6 +223,7 @@ public class GAService {
       }
     }
     log.info("Reprodução terminada, quantidade de filhos: {}", childrens.size());
+    childrens.forEach(chromosome -> chromosome.setFitness(chromosome.generateFitness()));
     evaluete(childrens);
     return childrens;
   }
@@ -246,6 +247,7 @@ public class GAService {
           , mutableList.size(), 1, random));
         selectedToMutate.getGenes().set(random.nextInt(selectedToMutate.getGenes().size()),
           generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size())));
+        selectedToMutate.setFitness(selectedToMutate.generateFitness());
       }
     }
   }
@@ -266,7 +268,7 @@ public class GAService {
                        int storageLimit, List<Float> evolutionHistory, int selectionMode, String email,
                        int reproductionMode, Integer populationLimit ) {
     // Critério de parada por número de gerações
-    if (generation > 1000) {
+    if (generation > 2000) {
       findResult(population, generation, email);
       return;
     }
