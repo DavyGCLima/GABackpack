@@ -4,20 +4,12 @@ import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
 import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
 import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.bean.HeaderColumnNameMappingStrategy;
-import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -172,12 +164,12 @@ public class GAService {
   private List<Chromosome> rankingSelection( List<Chromosome> population, int reproductionRate ) {
     log.info("Seleção por ranking");
     Set<Integer> generated = new LinkedHashSet<>();
-    Float endElite = (((float) reproductionRate / 2) / 100) * population.size();
+    Float endElite = (((float)reproductionRate / 2) / 100) * population.size();
     log.info("Indice da elite: {}", endElite);
     List<Chromosome> elitePopulation = population.subList(0, endElite.intValue());
     log.info("Tamanho dapoulação elite: {}", elitePopulation.size());
-    List<Chromosome> randomPopulation = Chromosome.getRandomPopulation(population, endElite.intValue(), generated,
-      random, endElite.intValue());
+    List<Chromosome> randomPopulation = Chromosome.getRandomPopulation(population, endElite.intValue(), generated, random,
+      endElite.intValue());
     log.info("Tamanho dapoulação randomica: {}", randomPopulation.size());
     randomPopulation.addAll(elitePopulation);
     return randomPopulation;
@@ -200,14 +192,14 @@ public class GAService {
    * Retira os piores individuos de uma popualção
    *
    * @param population população a ser limpa
+   * @return
    */
-  private void killWorstChromossomes( List<Chromosome> population, int count ) {
+  private List<Chromosome> killWorstChromossomes( List<Chromosome> population, int limit ) {
     log.info("Eliminando piores da população");
-    Float countDelete = ((float) count / 100) * population.size();
-    for (int i = population.size() - countDelete.intValue(); countDelete.intValue() > 0; i--) {
-      population.remove(i);
-      countDelete--;
-    }
+    int prevTotal = population.size();
+    population = population.stream().limit(limit).collect(Collectors.toList());
+    log.info("Total de elimninações: {}", prevTotal - population.size());
+    return population;
   }
 
   /**
@@ -268,12 +260,13 @@ public class GAService {
    * @param storageLimit        capacidade maxima da mochila
    * @param evolutionHistory    Histórico de evoluções
    * @param reproductionMode    Modo de reprodução
+   * @param populationLimit
    */
   private void evolve( List<Chromosome> population, int generation, int reproductionRate, int probabilityMutation,
                        int storageLimit, List<Float> evolutionHistory, int selectionMode, String email,
-                       int reproductionMode ) {
+                       int reproductionMode, Integer populationLimit ) {
     // Critério de parada por número de gerações
-    if (generation > 500) {
+    if (generation > 1000) {
       findResult(population, generation, email);
       return;
     }
@@ -284,16 +277,17 @@ public class GAService {
     log.info("Avaliando filhos");
     removeInvalidChromossomes(childrens, storageLimit);
     removeInvalidChromossomes(population, storageLimit);
+    log.info("Adicionando {} filhos", childrens.size());
     population.addAll(childrens);
     evaluete(population);
-    killWorstChromossomes(population, reproductionRate);
+    population = killWorstChromossomes(population, populationLimit);
     float bestValue = evaluete(population).getFitness();
     evolutionHistory.add(bestValue);
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
     evolve(population, generation + 1, reproductionRate, probabilityMutation, storageLimit, evolutionHistory,
-      selectionMode, email, reproductionMode);
+      selectionMode, email, reproductionMode, populationLimit);
   }
 
   /**
@@ -305,7 +299,7 @@ public class GAService {
    */
   private void findResult( List<Chromosome> population, int generation, String email ) {
     long endTime = System.nanoTime();
-    log.info("Fim do GA, geração: {}, tempo de execução: {}", generation, endTime - execTime);
+    log.info("Fim do GA, geração: {}, tempo de execução: {}", generation, (double)(endTime - execTime) / 1_000_000_000);
     Chromosome best = evaluete(population);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
@@ -346,7 +340,7 @@ public class GAService {
     evolutionHistory.add(best);
     evolve(population, 0, paramsDTO.getReproductionRate(), paramsDTO.getProbabilityMutation(),
       paramsDTO.getStorageLimit(), evolutionHistory, paramsDTO.getSelectionMode(), paramsDTO.getEmail(),
-      paramsDTO.getReproductionMode());
+      paramsDTO.getReproductionMode(), paramsDTO.getPopulationLimit());
   }
 
 }
