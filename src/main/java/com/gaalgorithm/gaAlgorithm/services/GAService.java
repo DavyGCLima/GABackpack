@@ -1,6 +1,7 @@
 package com.gaalgorithm.gaAlgorithm.services;
 
 import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
+import com.gaalgorithm.gaAlgorithm.domain.GenotypeGroup;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
 import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
 import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
@@ -268,11 +269,15 @@ public class GAService {
                        int storageLimit, List<Float> evolutionHistory, int selectionMode, String email,
                        int reproductionMode, Integer populationLimit ) {
     // Critério de parada por número de gerações
-    if (generation > 2000) {
+    int total = 2000;
+    if (generation > total) {
       findResult(population, generation, email);
       return;
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
+    if(generation % (0.1 * total) == 0) { // 10% of total
+      detectGeneticConvergence(population);
+    }
     List<Chromosome> populationToReproduce = select(population, reproductionRate, selectionMode);
     List<Chromosome> childrens = reproduce(populationToReproduce, generation, reproductionMode);
     mutate(childrens, probabilityMutation);
@@ -343,6 +348,37 @@ public class GAService {
     evolve(population, 0, paramsDTO.getReproductionRate(), paramsDTO.getProbabilityMutation(),
       paramsDTO.getStorageLimit(), evolutionHistory, paramsDTO.getSelectionMode(), paramsDTO.getEmail(),
       paramsDTO.getReproductionMode(), paramsDTO.getPopulationLimit());
+  }
+
+  private boolean detectGeneticConvergence( List<Chromosome> population) {
+    log.debug("Testando conversão genética");
+    int k = 10; // max group
+    int y = 10; // max distance between individuals
+    int m = 20; // max individuals in a group
+    List<GenotypeGroup> groups = new ArrayList<>();
+    groups.add(GenotypeGroup.addToGroup(new GenotypeGroup(), population.get(0)));
+    for (Chromosome chromosome : population) {
+      boolean added = false;
+      for (GenotypeGroup group : groups) {
+        if(GenotypeGroup.evalueteGenotype(group, chromosome, y)) {
+          GenotypeGroup.addToGroup(group, chromosome);
+          if(group.getPopulationGrouped().size() > m) {
+            log.info("Conversão genética detectada por super grupo!");
+            log.debug("Genotipo: {}", group.getGenotype());
+            return true;
+          }
+          added = true;
+        }
+      }
+      if(!added) {
+        groups.add(GenotypeGroup.addToGroup(new GenotypeGroup(), chromosome));
+      }
+    }
+    if(groups.size() < k) {
+      log.info("Conversão genética detectada por número de conjuntos!");
+      return true;
+    }
+    return false;
   }
 
 }
