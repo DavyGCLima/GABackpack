@@ -16,16 +16,31 @@ public class GenotypeGroup {
   private List<Item> genotype = new ArrayList<>();
   private List<Chromosome> populationGrouped = new ArrayList<>();
 
-  public static GenotypeGroup addToGroup(GenotypeGroup group, Chromosome chromosome) {
+  /**
+   * Adiciona um individuo no grupo
+   *
+   * @param group      alvo
+   * @param chromosome a ser adicionado
+   * @return grupo
+   */
+  public static GenotypeGroup addToGroup( GenotypeGroup group, Chromosome chromosome ) {
     group.setGenotype(chromosome.getGenes());
     group.getPopulationGrouped().add(chromosome);
     return group;
   }
 
-  public static boolean evalueteGenotype(GenotypeGroup group, Chromosome chromosome, int maxDistance) {
+  /**
+   * Avalia se o cromossome se encaixa no grupo
+   *
+   * @param group       alvo
+   * @param chromosome  a ser avaliado
+   * @param maxDistance distancia entre os individuos
+   * @return verdadeiro se o individuo se classifica no grupo
+   */
+  public static boolean evalueteGenotype( GenotypeGroup group, Chromosome chromosome, int maxDistance ) {
     int count = 0;
     for (Item gene : group.getGenotype()) {
-      if(!chromosome.getGenes().contains(gene)) count++;
+      if (!chromosome.getGenes().contains(gene)) count++;
     }
     if (count < maxDistance) return true;
     return false;

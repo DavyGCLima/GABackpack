@@ -29,7 +29,8 @@ public class GAResource {
                      @RequestParam(name = "selectionMode") int selectionMode,
                      @RequestParam(name = "reproductionMode") int reproductionMode, @RequestParam(name = "email",
     required = false) Optional<String> email,
-                     @RequestPart(name = "file", required = false) MultipartFile file ) {
+                     @RequestPart(name = "file", required = false) MultipartFile file,
+                     @RequestParam Integer k, @RequestParam Integer y, @RequestParam Integer m) {
     RequestParamsDTO paramsDTO = new RequestParamsDTO();
     paramsDTO.setReproductionMode(reproductionMode);
     paramsDTO.setReproductionRate(reproductionRate);
@@ -38,6 +39,9 @@ public class GAResource {
     paramsDTO.setStorageLimit(storageLimit);
     paramsDTO.setSelectionMode(selectionMode);
     paramsDTO.setEmail(email.orElse(null));
+    paramsDTO.setK(k);
+    paramsDTO.setY(y);
+    paramsDTO.setM(m);
     produtorServico.initialize(paramsDTO, file);
     return "Aguarde o resultado em seu email";
   }
