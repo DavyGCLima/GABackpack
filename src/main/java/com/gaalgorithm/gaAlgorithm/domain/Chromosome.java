@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -18,10 +19,14 @@ public class Chromosome implements Serializable, Comparable {
   private int generation = 0;
   private float fitness = 0;
 
+  public Chromosome clone() {
+    return SerializationUtils.clone(this);
+  }
+
   public Chromosome( List<Item> items ) {
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
-    Item[] solution = new Item[23];
+    Item[] solution = new Item[items.size()];
     for (int j = 0; j < 6; j++) {
       // garante que não haja solução em que nenhum item seja utilizado
       boolean has = Arrays.stream(solution).noneMatch(Objects::nonNull);

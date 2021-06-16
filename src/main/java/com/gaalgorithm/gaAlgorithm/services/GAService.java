@@ -2,6 +2,7 @@ package com.gaalgorithm.gaAlgorithm.services;
 
 import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import com.gaalgorithm.gaAlgorithm.domain.GenotypeGroup;
+import com.gaalgorithm.gaAlgorithm.domain.History;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
 import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
 import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
@@ -145,7 +146,7 @@ public class GAService {
    */
   private List<Chromosome> tournamentSelection( List<Chromosome> population, Integer reproductionRate ) {
     log.info("Selação por torneio");
-    Float reprodutionNumber = ((float) reproductionRate / (float) 100) * population.size();
+    Float reprodutionNumber = ((float) reproductionRate / (float) 100F) * population.size();
     List<Chromosome> winners = new ArrayList<>();
     for (int i = 0; i < reprodutionNumber; i++) {
       Set<Integer> generated = new LinkedHashSet<>();
@@ -165,7 +166,7 @@ public class GAService {
   private List<Chromosome> rankingSelection( List<Chromosome> population, int reproductionRate ) {
     log.info("Seleção por ranking");
     Set<Integer> generated = new LinkedHashSet<>();
-    Float endElite = (((float) reproductionRate / 2) / 100) * population.size();
+    Float endElite = (((float) reproductionRate / 2) / 100F) * population.size();
     log.info("Indice da elite: {}", endElite);
     List<Chromosome> elitePopulation = population.subList(0, endElite.intValue());
     log.info("Tamanho dapoulação elite: {}", elitePopulation.size());
@@ -236,7 +237,7 @@ public class GAService {
    * @param probabilityMutation probabilidade de mutação (referência)
    */
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
-    float prob = (probabilityMutation * 100) / mutableList.size();
+    float prob = ((float)probabilityMutation / 100);
     log.info("Mutação, probabiliade de: {}", prob);
     Set<Integer> generated = new LinkedHashSet<>();
     Random random = new Random();
@@ -255,23 +256,27 @@ public class GAService {
 
   /**
    * Método principal da evolução, é um metodo recursivo que resultará em uma solução
-   *
-   * @param params           parametros gerais
-   * @param population       população a ser utilizada
+   *  @param population       população a ser utilizada
    * @param generation       geração atual
+   * @param params           parametros gerais
    * @param evolutionHistory Histórico de evoluções
    */
   private void evolve( List<Chromosome> population, int generation, RequestParamsDTO params,
-                       List<Float> evolutionHistory ) {
+                       History evolutionHistory ) {
     // Critério de parada por número de gerações
-    int total = 2000;
+    int total = 1000;
     if (generation > total) {
-      findResult(population, generation, params.getEmail());
+      findResult(population, generation, params.getEmail(), evolutionHistory);
       return;
     }
     log.info("Geração #{} tamanho da População: {}", generation, population.size());
     if (generation % (0.1 * total) == 0) { // 10% of total
-      detectGeneticConvergence(population, params.getK(), params.getY(), params.getM());
+      List<GenotypeGroup> genotypeGroups = detectGeneticConvergence(population, params.getK(), params.getY(),
+        params.getM());
+      if(genotypeGroups != null) {
+        evolutionHistory.getGeneticConvertion().add(generation);
+        genotypeGroups.forEach(genotypeGroup -> mutate(genotypeGroup.getPopulationGrouped(), 100));
+      }
     }
     List<Chromosome> populationToReproduce = select(population, params.getReproductionRate(),
       params.getSelectionMode());
@@ -283,9 +288,8 @@ public class GAService {
     log.info("Adicionando {} filhos", childrens.size());
     population.addAll(childrens);
     evaluete(population);
-    population = killWorstChromossomes(population, params.getPopulationLimit());
-    float bestValue = evaluete(population).getFitness();
-    evolutionHistory.add(bestValue);
+    population = killWorstChromossomes(population, params.getPopulationLimit()*2);
+    evolutionHistory.getBests().add(evaluete(population).clone());
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
@@ -299,14 +303,15 @@ public class GAService {
    * @param generation geração atual
    * @param email      de referencia para envio
    */
-  private void findResult( List<Chromosome> population, int generation, String email ) {
+  private void findResult( List<Chromosome> population, int generation, String email, History history ) {
     long endTime = System.nanoTime();
     log.info("Fim do GA, geração: {}, tempo de execução: {}", generation,
       (double) (endTime - execTime) / 1_000_000_000);
     Chromosome best = evaluete(population);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
-    log.debug("Itens usados: {}", best.getGenes());
+    log.info("Ocorreu convergencia em: {}", history.getGeneticConvertion());
+    log.info("Itens usados: {}", best.getGenes());
     enviarEmail(email, best);
   }
 
@@ -338,10 +343,9 @@ public class GAService {
 
     List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items,
       paramsDTO.getStorageLimit());
-    float best = evaluete(population).getFitness();
-    List<Float> evolutionHistory = new ArrayList<>();
-    evolutionHistory.add(best);
-    evolve(population, 0, paramsDTO, evolutionHistory);
+    History history = new History();
+    history.getBests().add(evaluete(population).clone());
+    evolve(population, 0, paramsDTO, history);
   }
 
   /**
@@ -351,9 +355,9 @@ public class GAService {
    * @param k          quantidade máxima de grupos
    * @param y          distância entre os individuos
    * @param m          máximo de individuos em um grupo
-   * @return verdadeiro se ocorreu conversão
+   * @return A lista de grupos se ocorreu covnersão. Caso contrário retorna null
    */
-  private boolean detectGeneticConvergence( List<Chromosome> population, Integer k, Integer y, Integer m ) {
+  private List<GenotypeGroup> detectGeneticConvergence( List<Chromosome> population, Integer k, Integer y, Integer m ) {
     log.debug("Testando conversão genética");
     List<GenotypeGroup> groups = new ArrayList<>();
     groups.add(GenotypeGroup.addToGroup(new GenotypeGroup(), population.get(0)));
@@ -365,7 +369,9 @@ public class GAService {
           if (group.getPopulationGrouped().size() > m) {
             log.info("Conversão genética detectada por super grupo!");
             log.debug("Genotipo: {}", group.getGenotype());
-            return true;
+            List<GenotypeGroup> toReturn = new ArrayList<>();
+            toReturn.add(group);
+            return toReturn;
           }
           added = true;
         }
@@ -376,9 +382,9 @@ public class GAService {
     }
     if (groups.size() < k) {
       log.info("Conversão genética detectada por número de conjuntos!");
-      return true;
+      return groups;
     }
-    return false;
+    return null;
   }
 
 }

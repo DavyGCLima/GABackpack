@@ -36,7 +36,7 @@ public class Item implements Serializable {
 
   @Override
   public String toString() {
-    return "Item{" + "coast=" + coast + ", utility=" + utility + ", weight=" + weight + '}';
+    return "Item{ id=" + id + "coast=" + coast + ", utility=" + utility + ", weight=" + weight + '}';
   }
 
   @Override
