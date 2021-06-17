@@ -242,14 +242,16 @@ public class GAService {
     Set<Integer> generated = new LinkedHashSet<>();
     Random random = new Random();
     // verifica se um individuo deve sofrer mutação
-    for (int i = 0; i < prob; i++) {
+    for (Chromosome selectedToMutate : mutableList) {
       int sorted = random.nextInt(100);
       if (sorted > prob) {
-        Chromosome selectedToMutate = mutableList.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated
-          , mutableList.size(), 1, random));
-        selectedToMutate.getGenes().set(random.nextInt(selectedToMutate.getGenes().size()),
-          generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size())));
-        selectedToMutate.setFitness(selectedToMutate.generateFitness());
+        for (int j = 0; j < (0.5*selectedToMutate.getGenes().size()); j++) {
+          selectedToMutate.getGenes().set(
+            random.nextInt(selectedToMutate.getGenes().size()),
+            generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size()))
+          );
+          selectedToMutate.setFitness(selectedToMutate.generateFitness());
+        }
       }
     }
   }
