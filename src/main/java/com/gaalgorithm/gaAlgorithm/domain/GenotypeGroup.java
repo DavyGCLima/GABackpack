@@ -39,8 +39,8 @@ public class GenotypeGroup {
    */
   public static boolean evalueteGenotype( GenotypeGroup group, Chromosome chromosome, int maxDistance ) {
     int count = 0;
-    for (Item gene : group.getGenotype()) {
-      if (!chromosome.getGenes().contains(gene)) count++;
+    for (int i = 0; i < group.getGenotype().size(); i++) {
+      if ( chromosome.getGenes().get(i) != group.getGenotype().get(i) ) count++;
     }
     if (count < maxDistance) return true;
     return false;

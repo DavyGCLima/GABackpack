@@ -237,7 +237,7 @@ public class GAService {
    * @param probabilityMutation probabilidade de mutação (referência)
    */
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
-    float prob = ((float)probabilityMutation / 100);
+    float prob = ((float)probabilityMutation / 100) ;
     log.info("Mutação, probabiliade de: {}", prob);
     Set<Integer> generated = new LinkedHashSet<>();
     Random random = new Random();
