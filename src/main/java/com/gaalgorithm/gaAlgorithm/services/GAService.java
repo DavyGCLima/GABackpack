@@ -342,6 +342,7 @@ public class GAService {
             "<p>K: "+ params.getK()+" segundos</p>"+
             "<p>Y: "+ params.getY()+" segundos</p>"+
             "<p>M: "+ params.getM()+" segundos</p>"+
+            "<p>Ocorreu convergência nas gerações: "+history.getGeneticConvertion()+"</p>"+
             "<p><strong>Melhor fitness: "+best.getFitness()+"</strong> da geração #"+best.getGeneration()+" com peso total de "+best.getWeight()+" e "+best.getGenes().size()+" itens<p>" +
           "</section>" +
           "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" +
