@@ -4,16 +4,19 @@ import com.gaalgorithm.gaAlgorithm.util.Random;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Slf4j
+@ToString
 public class Chromosome implements Serializable, Comparable {
   private List<Item> genes = new ArrayList<>();
   private int generation = 0;
@@ -48,6 +51,7 @@ public class Chromosome implements Serializable, Comparable {
 
   /**
    * Função Objetivo
+   *
    * @return retorna o valor deste individuo
    */
   public float generateFitness() {
@@ -69,18 +73,20 @@ public class Chromosome implements Serializable, Comparable {
 
   /**
    * Conta os itens usados
+   *
    * @return total de itens usados
    */
   public int getCountItemUsed() {
     int total = 0;
     for (Item gene : this.getGenes()) {
-      if(gene != null) total++;
+      if (gene != null) total++;
     }
     return total;
   }
 
   /**
    * Calcula o peso total deste individuo
+   *
    * @return O peso total
    */
   public float getWeight() {
@@ -95,11 +101,12 @@ public class Chromosome implements Serializable, Comparable {
 
   /**
    * Cira uma sublista aleatória da popualção
+   *
    * @param population de referência
    * @param startIndex indice do inicio da sublista
-   * @param generated array que guarda itens randomicos usados
-   * @param random objeto que permite a aleatóriedade
-   * @param total quantidade de individuos da sublista
+   * @param generated  array que guarda itens randomicos usados
+   * @param random     objeto que permite a aleatóriedade
+   * @param total      quantidade de individuos da sublista
    * @return
    */
   public static List<Chromosome> getRandomPopulation( List<Chromosome> population, int startIndex,
@@ -114,7 +121,8 @@ public class Chromosome implements Serializable, Comparable {
 
   /**
    * Reprodução corssover uniforme, faz a troca de todos os cromossomos de um individuo com o atual
-   * @param parent individuo de referência para o cruzamento
+   *
+   * @param parent     individuo de referência para o cruzamento
    * @param generation geração atual
    * @return dois filhos resultantes do cruzamento deste individuo com o parent
    */
@@ -158,14 +166,15 @@ public class Chromosome implements Serializable, Comparable {
    * Reprodução cruzada de dois pontos.
    * <p>Reproduz os individuos com base em dois pontos sortidos no cromossomo, as secções geradas serão trocadas
    * entre os individuos para gerar os descendentes</p>
-   * @param parent outro pai de referência
+   *
+   * @param parent     outro pai de referência
    * @param generation geração atual
    * @return Dois filhos resultados do cruzamento deste individuo com o parent
    */
   public List<Chromosome> twoPointsCrossover( Chromosome parent, int generation ) {
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
-    int point1 = Random.getNextRandom(generated, this.getGenes().size()/2, 1, 0, random);
+    int point1 = Random.getNextRandom(generated, this.getGenes().size() / 2, 1, 0, random);
     int point2 = Random.getNextRandom(generated, this.getGenes().size(), 2, point1, random);
 
     List<Item> genes1 = new ArrayList<>(this.getGenes().size());
@@ -215,5 +224,9 @@ public class Chromosome implements Serializable, Comparable {
       return Float.compare(c.getFitness(), this.getFitness());
     }
     return 0;
+  }
+
+  public String toHtml() {
+    return "<pre>\"Chromosome\":{" + "\"genes\":" + "<br>" + genes.stream().filter(Objects::nonNull).map(item -> "  " + item.toHtml() + "<br>").collect(Collectors.toList()) + "<br>, \"generation\":" + generation + ", \"fitness\":" + fitness + "} </pre><br>";
   }
 }

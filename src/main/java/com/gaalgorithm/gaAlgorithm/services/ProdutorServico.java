@@ -41,6 +41,14 @@ public class ProdutorServico {
     Message<RequestParamsDTO> message = MessageBuilder.withPayload(paramsDTO).build();
     produtorSource.initialize().send(message);
   }
+  public void bulkInitialize( RequestParamsDTO paramsDTO, MultipartFile file ) {
+    List<Item> itemsFromFile = getItemsFromFile(file);
+    paramsDTO.setItems(Optional.of(itemsFromFile));
+    for (int i = 0; i < paramsDTO.getBulkPopulationLimit().size(); i++) {
+      Message<RequestParamsDTO> message = MessageBuilder.withPayload(paramsDTO.getBulkIndex(i)).build();
+      produtorSource.initialize().send(message);
+    }
+  }
 
   private List<Item> getItemsFromFile( MultipartFile file ) {
     if (file != null) {

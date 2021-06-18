@@ -4,6 +4,7 @@ import com.opencsv.bean.CsvBindByName;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString
 public class Item implements Serializable {
 
   @CsvBindByName
@@ -34,9 +36,8 @@ public class Item implements Serializable {
     this.utility = utility;
   }
 
-  @Override
-  public String toString() {
-    return "Item{ id=" + id + "coast=" + coast + ", utility=" + utility + ", weight=" + weight + '}';
+  public String toHtml() {
+    return "\"Item\": { \"id\":" + id + "\", coast\":" + coast + ", \"utility\":" + utility + ", \"weight\":" + weight + '}';
   }
 
   @Override
