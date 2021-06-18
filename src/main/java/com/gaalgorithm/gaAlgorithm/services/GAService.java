@@ -18,9 +18,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GAService {
   private final Random random = new Random();
-  List defaultItems = new ArrayList<>();
+  private List defaultItems = new ArrayList<>();
   private final ProdutorServico produtorServico;
   private long execTime;
+  private RequestParamsDTO params;
+  History evolutionHistory = new History();;
+
 
   /**
    * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
@@ -259,11 +262,8 @@ public class GAService {
    *
    * @param population       população a ser utilizada
    * @param generation       geração atual
-   * @param params           parametros gerais
-   * @param evolutionHistory Histórico de evoluções
    */
-  private void evolve( List<Chromosome> population, int generation, RequestParamsDTO params,
-                       History evolutionHistory ) {
+  private void evolve( List<Chromosome> population, int generation) {
     // Critério de parada por número de gerações
     int total = 1000;
     if (generation > total) {
@@ -294,7 +294,7 @@ public class GAService {
     log.info("Evoluindo população");
     log.info(
       "============================================================================================================");
-    evolve(population, generation + 1, params, evolutionHistory);
+    evolve(population, generation + 1);
   }
 
   /**
@@ -333,6 +333,15 @@ public class GAService {
         "<main>" +
           "<section><h4>Detalhes</h4>"+
             "<p>Tempo de execução: "+ history.getTimeExec()+" segundos</p>"+
+            "<p>Taxa de reprodução: "+ params.getReproductionRate()+" segundos</p>"+
+            "<p>Modo de reprodução: "+ params.getReproductionMode()+" segundos</p>"+
+            "<p>População inicial: "+ params.getPopulationLimit()+" segundos</p>"+
+            "<p>Capacidade máxima da mochila: "+ params.getStorageLimit()+" segundos</p>"+
+            "<p>Modo de seleção: "+ params.getSelectionMode()+" segundos</p>"+
+            "<p>probabilidade de mutação: "+ params.getProbabilityMutation()+" segundos</p>"+
+            "<p>K: "+ params.getK()+" segundos</p>"+
+            "<p>Y: "+ params.getY()+" segundos</p>"+
+            "<p>M: "+ params.getM()+" segundos</p>"+
             "<p><strong>Melhor fitness: "+best.getFitness()+"</strong> da geração #"+best.getGeneration()+" com peso total de "+best.getWeight()+" e "+best.getGenes().size()+" itens<p>" +
           "</section>" +
           "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" +
@@ -345,9 +354,10 @@ public class GAService {
   /**
    * Inicia o Algoritimo gerando a primeira população
    *
-   * @param paramsDTO
+   * @param paramsDTO Parametros do algoritimo
    */
   public void start( RequestParamsDTO paramsDTO ) {
+    params = paramsDTO;
     execTime = System.nanoTime();
     log.info("Gerando items");
     //usando items iguais para validação
@@ -356,9 +366,8 @@ public class GAService {
 
     List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items,
       paramsDTO.getStorageLimit());
-    History history = new History();
-    history.getBests().add(evaluete(population).clone());
-    evolve(population, 0, paramsDTO, history);
+    evolutionHistory.getBests().add(evaluete(population).clone());
+    evolve(population, 0);
   }
 
   /**
