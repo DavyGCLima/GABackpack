@@ -237,7 +237,7 @@ public class GAService {
    * @param probabilityMutation probabilidade de mutação (referência)
    */
   private void mutate( List<Chromosome> mutableList, int probabilityMutation ) {
-    float prob = ((float)probabilityMutation / 100) ;
+    float prob = ((float) probabilityMutation / 100);
     log.info("Mutação, probabiliade de: {}", prob);
     Set<Integer> generated = new LinkedHashSet<>();
     Random random = new Random();
@@ -245,11 +245,9 @@ public class GAService {
     for (Chromosome selectedToMutate : mutableList) {
       int sorted = random.nextInt(100);
       if (sorted > prob) {
-        for (int j = 0; j < (0.5*selectedToMutate.getGenes().size()); j++) {
-          selectedToMutate.getGenes().set(
-            random.nextInt(selectedToMutate.getGenes().size()),
-            generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size()))
-          );
+        for (int j = 0; j < (0.5 * selectedToMutate.getGenes().size()); j++) {
+          selectedToMutate.getGenes().set(random.nextInt(selectedToMutate.getGenes().size()),
+            generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size())));
           selectedToMutate.setFitness(selectedToMutate.generateFitness());
         }
       }
@@ -258,7 +256,8 @@ public class GAService {
 
   /**
    * Método principal da evolução, é um metodo recursivo que resultará em uma solução
-   *  @param population       população a ser utilizada
+   *
+   * @param population       população a ser utilizada
    * @param generation       geração atual
    * @param params           parametros gerais
    * @param evolutionHistory Histórico de evoluções
@@ -275,7 +274,7 @@ public class GAService {
     if (generation % (0.1 * total) == 0) { // 10% of total
       List<GenotypeGroup> genotypeGroups = detectGeneticConvergence(population, params.getK(), params.getY(),
         params.getM());
-      if(genotypeGroups != null) {
+      if (genotypeGroups != null) {
         evolutionHistory.getGeneticConvertion().add(generation);
         genotypeGroups.forEach(genotypeGroup -> mutate(genotypeGroup.getPopulationGrouped(), 100));
       }
@@ -290,7 +289,7 @@ public class GAService {
     log.info("Adicionando {} filhos", childrens.size());
     population.addAll(childrens);
     evaluete(population);
-    population = killWorstChromossomes(population, params.getPopulationLimit()*2);
+    population = killWorstChromossomes(population, params.getPopulationLimit() * 2);
     evolutionHistory.getBests().add(evaluete(population).clone());
     log.info("Evoluindo população");
     log.info(
@@ -307,27 +306,39 @@ public class GAService {
    */
   private void findResult( List<Chromosome> population, int generation, String email, History history ) {
     long endTime = System.nanoTime();
-    log.info("Fim do GA, geração: {}, tempo de execução: {}", generation,
-      (double) (endTime - execTime) / 1_000_000_000);
+    history.setTimeExec((double) (endTime - execTime) / 1_000_000_000);
+    log.info("Fim do GA, geração: {}, tempo de execução: {}", generation, history.getTimeExec());
     Chromosome best = evaluete(population);
+    history.setBest(best);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
     log.info("Ocorreu convergencia em: {}", history.getGeneticConvertion());
     log.info("Itens usados: {}", best.getGenes());
-    enviarEmail(email, best);
+    enviarEmail(email, best, history);
   }
 
   /**
    * Envia um email com o resultado
    *
-   * @param email de destino
-   * @param best  melhor solução
+   * @param email   de destino
+   * @param best    melhor solução
+   * @param history histórico
    */
-  private void enviarEmail( String email, Chromosome best ) {
+  private void enviarEmail( String email, Chromosome best, History history ) {
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
-    emailDTO.setCorpo(best.toString());
-    emailDTO.setAssunto("Resultado do algoritmo");
+    emailDTO.setCorpo(
+      "<html>" +
+        "<header><h2>Resultado do GA: "+best.getFitness()+"</h2></header>" +
+        "<main>" +
+          "<section><h4>Detalhes</h4>"+
+            "<p>Tempo de execução: "+ history.getTimeExec()+" segundos</p>"+
+            "<p><strong>Melhor fitness: "+best.getFitness()+"</strong> da geração #"+best.getGeneration()+" com peso total de "+best.getWeight()+" e "+best.getGenes().size()+" itens<p>" +
+          "</section>" +
+          "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" +
+        "</main>" +
+      "</html>");
+    emailDTO.setAssunto("Resultado do algoritmo GA: "+best.getFitness());
     produtorServico.enviarEmail(emailDTO);
   }
 

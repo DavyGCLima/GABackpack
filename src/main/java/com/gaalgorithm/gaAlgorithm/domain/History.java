@@ -13,4 +13,6 @@ import java.util.List;
 public class History {
   List<Chromosome> bests = new ArrayList<>();
   List<Integer> geneticConvertion = new ArrayList<>();
+  Double timeExec = 0D;
+  Chromosome best;
 }
