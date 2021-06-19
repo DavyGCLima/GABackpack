@@ -4,6 +4,7 @@ import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import com.gaalgorithm.gaAlgorithm.domain.GenotypeGroup;
 import com.gaalgorithm.gaAlgorithm.domain.History;
 import com.gaalgorithm.gaAlgorithm.domain.Item;
+import com.gaalgorithm.gaAlgorithm.domain.history.GeneticConvertionHistory;
 import com.gaalgorithm.gaAlgorithm.services.dto.EmailDTO;
 import com.gaalgorithm.gaAlgorithm.services.dto.RequestParamsDTO;
 import lombok.RequiredArgsConstructor;
@@ -275,7 +276,10 @@ public class GAService {
       List<GenotypeGroup> genotypeGroups = detectGeneticConvergence(population, params.getK(), params.getY(),
         params.getM());
       if (genotypeGroups != null) {
-        evolutionHistory.getGeneticConvertion().add(generation);
+        GeneticConvertionHistory history = new GeneticConvertionHistory();
+        history.setGeneration(generation);
+        history.setGenotypeGroups(genotypeGroups);
+        evolutionHistory.getGeneticConvertion().add(history);
         genotypeGroups.forEach(genotypeGroup -> mutate(genotypeGroup.getPopulationGrouped(), 100));
       }
     }
@@ -342,7 +346,7 @@ public class GAService {
             "<p>K: "+ params.getK()+" segundos</p>"+
             "<p>Y: "+ params.getY()+" segundos</p>"+
             "<p>M: "+ params.getM()+" segundos</p>"+
-            "<p>Ocorreu convergência nas gerações: "+history.getGeneticConvertion()+"</p>"+
+            "<p>Ocorreu convergência nas gerações: "+history.getGeneticConvertion().stream().map(geneticHistory -> " " + geneticHistory.getGeneration())+"</p>"+
             "<p><strong>Melhor fitness: "+best.getFitness()+"</strong> da geração #"+best.getGeneration()+" com peso total de "+best.getWeight()+" e "+best.getGenes().size()+" itens<p>" +
           "</section>" +
           "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" +

@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @ToString
 public class Chromosome implements Serializable, Comparable {
-  private List<Item> genes = new ArrayList<>();
+  private Item[] genes;
   private int generation = 0;
   private float fitness = 0;
 
@@ -27,6 +27,7 @@ public class Chromosome implements Serializable, Comparable {
   }
 
   public Chromosome( List<Item> items ) {
+    this.genes = new Item[items.size()];
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
     Item[] solution = new Item[items.size()];
@@ -43,9 +44,7 @@ public class Chromosome implements Serializable, Comparable {
         solution[j] = null;
       }
     }
-    for (Item item : solution) {
-      this.getGenes().add(item);
-    }
+    this.setGenes(solution.clone());
     this.setFitness(this.generateFitness());
   }
 
@@ -128,17 +127,17 @@ public class Chromosome implements Serializable, Comparable {
    */
   public List<Chromosome> uniformCrossover( Chromosome parent, int generation ) {
     List<Chromosome> childrens = new ArrayList<>(2);
-    List<Boolean> sortedList = Random.getRandomBooleanList(this.getGenes().size());
-    List<Item> genes1 = new ArrayList<>(this.getGenes().size());
-    List<Item> genes2 = new ArrayList<>(this.getGenes().size());
+    List<Boolean> sortedList = Random.getRandomBooleanList(this.getGenes().length);
+    List<Item> genes1 = new ArrayList<>(this.getGenes().length);
+    List<Item> genes2 = new ArrayList<>(this.getGenes().length);
     for (int i = 0; i < sortedList.size(); i++) {
       boolean sorted = sortedList.get(i);
       if (sorted) {
-        genes1.add(parent.getGenes().get(i));
-        genes2.add(this.getGenes().get(i));
+        genes1.add(parent.getGenes()[i]);
+        genes2.add(this.getGenes()[i]);
       } else {
-        genes1.add(this.getGenes().get(i));
-        genes2.add(parent.getGenes().get(i));
+        genes1.add(this.getGenes()[i]);
+        genes2.add(parent.getGenes()[i]);
       }
     }
 
@@ -150,12 +149,12 @@ public class Chromosome implements Serializable, Comparable {
     }
 
     Chromosome child = new Chromosome();
-    child.setGenes(genes1);
+    child.setGenes((Item[]) genes1.stream().toArray());
     child.setGeneration(generation);
     childrens.add(child);
 
     Chromosome child2 = new Chromosome();
-    child2.setGenes(genes2);
+    child2.setGenes((Item[]) genes2.toArray());
     child2.setGeneration(generation);
     childrens.add(child2);
 
@@ -174,19 +173,20 @@ public class Chromosome implements Serializable, Comparable {
   public List<Chromosome> twoPointsCrossover( Chromosome parent, int generation ) {
     Set<Integer> generated = new LinkedHashSet<>();
     java.util.Random random = new java.util.Random();
-    int point1 = Random.getNextRandom(generated, this.getGenes().size() / 2, 1, 0, random);
-    int point2 = Random.getNextRandom(generated, this.getGenes().size(), 2, point1, random);
+    int point1 = Random.getNextRandom(generated, this.getGenes().length / 2, 1, 0, random);
+    int point2 = Random.getNextRandom(generated, this.getGenes().length, 2, point1, random);
 
-    List<Item> genes1 = new ArrayList<>(this.getGenes().size());
-    List<Item> genes2 = new ArrayList<>(this.getGenes().size());
+    Item[] genes1 = new Item[this.getGenes().length];
+    Item[] genes2 = new Item[(this.getGenes().length];
 
+    genes1 =
     genes1.addAll(this.getGenes().subList(0, point1));
     genes1.addAll(parent.getGenes().subList(point1, point2));
-    genes1.addAll(this.getGenes().subList(point2, this.getGenes().size()));
+    genes1.addAll(this.getGenes().subList(point2, this.getGenes().length));
 
     genes2.addAll(parent.getGenes().subList(0, point1));
     genes2.addAll(this.getGenes().subList(point1, point2));
-    genes2.addAll(parent.getGenes().subList(point2, this.getGenes().size()));
+    genes2.addAll(parent.getGenes().subList(point2, this.getGenes().length));
 
     List<Chromosome> childrens = new ArrayList<>(2);
     Chromosome chield1 = new Chromosome();
