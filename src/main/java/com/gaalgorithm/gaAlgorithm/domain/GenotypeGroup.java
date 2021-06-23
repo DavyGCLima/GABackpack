@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @Slf4j
 public class GenotypeGroup {
-  private List<Item> genotype = new ArrayList<>();
+  private List<Boolean> genotype;
   private List<Chromosome> populationGrouped = new ArrayList<>();
 
   /**
@@ -23,7 +23,7 @@ public class GenotypeGroup {
    * @param chromosome a ser adicionado
    * @return grupo
    */
-  public static GenotypeGroup addToGroup( GenotypeGroup group, Chromosome chromosome ) {
+  public static GenotypeGroup addToGroup( GenotypeGroup group, Chromosome chromosome) {
     group.setGenotype(chromosome.getGenes());
     group.getPopulationGrouped().add(chromosome);
     return group;
@@ -42,7 +42,6 @@ public class GenotypeGroup {
     for (int i = 0; i < group.getGenotype().size(); i++) {
       if ( chromosome.getGenes().get(i) != group.getGenotype().get(i) ) count++;
     }
-    if (count < maxDistance) return true;
-    return false;
+    return count < maxDistance;
   }
 }

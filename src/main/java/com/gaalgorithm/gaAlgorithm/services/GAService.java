@@ -19,68 +19,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GAService {
   private final Random random = new Random();
-  private List defaultItems = new ArrayList<>();
+  private List<Item> defaultItems = new ArrayList<>();
   private final ProdutorServico produtorServico;
   private long execTime;
   private RequestParamsDTO params;
-  History evolutionHistory = new History();;
+  History evolutionHistory = new History();
 
-
-  /**
-   * Cria itens para o problema da mochila randomicamente, somente baseado no limite da mochila.
-   * Nenhum Item pode ultrapssar o limite da propria mochila por sí apenas
-   *
-   * @param populationLimit limite da população
-   * @param storageLimit    limite da mochila
-   * @return itens a serem usados
-   */
-  private List<Item> generateRandomItems( int populationLimit, int storageLimit ) {
-    // gera os items que serão usados
-    List<Item> items = new ArrayList<>();
-    for (int i = 0; i < populationLimit; i++) {
-      items.add(new Item(random.nextFloat() + random.nextInt(1000), random.nextFloat() + random.nextInt(storageLimit)
-        , random.nextFloat() + random.nextInt(1000), false));
-    }
-    return items;
-  }
-
-  private List<Item> getStaticItems() {
-    List<Item> items = new ArrayList<>();
-    items.add(new Item(12, 33, 200, false));
-    items.add(new Item(24, 66.2f, 309, false));
-    items.add(new Item(5, 78.1f, 190, false));
-    items.add(new Item(176, 15.8f, 525, false));
-    items.add(new Item(90, 24.23f, 602, false));
-    items.add(new Item(101, 49.9f, 808, false));
-    items.add(new Item(78, 90.22f, 209, false));
-    items.add(new Item(209, 25.482f, 738, false));
-    items.add(new Item(728, 69.289f, 28, false));
-    items.add(new Item(28, 35.290f, 93, false));
-    items.add(new Item(90, 9.290f, 873, false));
-    items.add(new Item(28, 24.2978f, 189, false));
-    items.add(new Item(1, 42.9802f, 34, false));
-    items.add(new Item(3, 93.16f, 437, false));
-    items.add(new Item(58, 19.278f, 46, false));
-    items.add(new Item(99, 83.389f, 84, false));
-    items.add(new Item(87, 16.167f, 923, false));
-    items.add(new Item(27, 29.2f, 123, false));
-    items.add(new Item(12, 7.378f, 324, false));
-    items.add(new Item(62, 18.9f, 75, false));
-    items.add(new Item(78, 27.190f, 458, false));
-    items.add(new Item(55, 40.38f, 857, false));
-    items.add(new Item(12, 77.87f, 973, false));
-    defaultItems = items;
-    return items;
-  }
-
-  private List<Item> generateItems( Optional<List<Item>> items ) {
+  private List<Item> generateItems( List<Item> items ) {
     if (defaultItems.size() > 0) return defaultItems;
-    // gera os items que serão usados
-    if (items.isPresent() && items.get().size() > 0) {
-      defaultItems = items.get();
-      return defaultItems;
-    }
-    return getStaticItems();
+    defaultItems = items;
+    return defaultItems;
   }
 
   /**
@@ -95,14 +43,12 @@ public class GAService {
     log.info("Gerando primeira população");
     List<Chromosome> population = new ArrayList<>(populationLimit);
     for (int i = 0; i < populationLimit; i++) {
-      Chromosome chromosome = new Chromosome(items);
-      // individuos que não atendem as restrições não são considerados na população
-      if (chromosome.getWeight() > storageLimit || chromosome.getWeight() == 0) {
-        // individuos não considerados devem ser repostos para tender o tamanho da poulação
-        i--;
-      } else {
-        population.add(chromosome);
+      if(i <= 0.66 * populationLimit) {
+        population.add(Chromosome.buildValidChromosome(items, storageLimit));
+        continue;
       }
+      Chromosome chromosome = new Chromosome(items);
+      population.add(chromosome);
     }
     return population;
   }
@@ -150,7 +96,7 @@ public class GAService {
    */
   private List<Chromosome> tournamentSelection( List<Chromosome> population, Integer reproductionRate ) {
     log.info("Selação por torneio");
-    Float reprodutionNumber = ((float) reproductionRate / (float) 100F) * population.size();
+    float reprodutionNumber = ((float) reproductionRate / 100F) * population.size();
     List<Chromosome> winners = new ArrayList<>();
     for (int i = 0; i < reprodutionNumber; i++) {
       Set<Integer> generated = new LinkedHashSet<>();
@@ -198,7 +144,7 @@ public class GAService {
    * Retira os piores individuos de uma popualção
    *
    * @param population população a ser limpa
-   * @return
+   * @return Nov apopulação
    */
   private List<Chromosome> killWorstChromossomes( List<Chromosome> population, int limit ) {
     log.info("Eliminando piores da população");
@@ -250,8 +196,8 @@ public class GAService {
       int sorted = random.nextInt(100);
       if (sorted > prob) {
         for (int j = 0; j < (0.5 * selectedToMutate.getGenes().size()); j++) {
-          selectedToMutate.getGenes().set(random.nextInt(selectedToMutate.getGenes().size()),
-            generateItems(null).get(random.nextInt(selectedToMutate.getGenes().size())));
+          int index = random.nextInt(selectedToMutate.getGenes().size());
+          selectedToMutate.getGenes().set(index, !selectedToMutate.getGenes().get(index));
           selectedToMutate.setFitness(selectedToMutate.generateFitness());
         }
       }
@@ -261,10 +207,10 @@ public class GAService {
   /**
    * Método principal da evolução, é um metodo recursivo que resultará em uma solução
    *
-   * @param population       população a ser utilizada
-   * @param generation       geração atual
+   * @param population população a ser utilizada
+   * @param generation geração atual
    */
-  private void evolve( List<Chromosome> population, int generation) {
+  private void evolve( List<Chromosome> population, int generation ) {
     // Critério de parada por número de gerações
     int total = 1000;
     if (generation > total) {
@@ -316,8 +262,8 @@ public class GAService {
     history.setBest(best);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
-    log.info("Ocorreu convergencia em: {}", history.getGeneticConvertion());
-    log.info("Itens usados: {}", best.getGenes());
+    log.info("Ocorreu convergencia em: {}", history.getGeneticConvertion().stream().map(GeneticConvertionHistory::getGeneration));
+    log.info("Itens usados: {}", best.getItemsUsed());
     enviarEmail(email, best, history);
   }
 
@@ -331,28 +277,9 @@ public class GAService {
   private void enviarEmail( String email, Chromosome best, History history ) {
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
-    emailDTO.setCorpo(
-      "<html>" +
-        "<header><h2>Resultado do GA: "+best.getFitness()+"</h2></header>" +
-        "<main>" +
-          "<section><h4>Detalhes</h4>"+
-            "<p>Tempo de execução: "+ history.getTimeExec()+" segundos</p>"+
-            "<p>Taxa de reprodução: "+ params.getReproductionRate()+" segundos</p>"+
-            "<p>Modo de reprodução: "+ params.getReproductionMode()+" segundos</p>"+
-            "<p>População inicial: "+ params.getPopulationLimit()+" segundos</p>"+
-            "<p>Capacidade máxima da mochila: "+ params.getStorageLimit()+" segundos</p>"+
-            "<p>Modo de seleção: "+ params.getSelectionMode()+" segundos</p>"+
-            "<p>probabilidade de mutação: "+ params.getProbabilityMutation()+" segundos</p>"+
-            "<p>K: "+ params.getK()+" segundos</p>"+
-            "<p>Y: "+ params.getY()+" segundos</p>"+
-            "<p>M: "+ params.getM()+" segundos</p>"+
-            "<p>Ocorreu convergência nas gerações: "+history.getGeneticConvertion().stream().map(geneticHistory -> " " + geneticHistory.getGeneration())+"</p>"+
-            "<p><strong>Melhor fitness: "+best.getFitness()+"</strong> da geração #"+best.getGeneration()+" com peso total de "+best.getWeight()+" e "+best.getGenes().size()+" itens<p>" +
-          "</section>" +
-          "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" +
-        "</main>" +
-      "</html>");
-    emailDTO.setAssunto("Resultado do algoritmo GA: "+best.getFitness());
+    emailDTO.setCorpo("<html>" + "<header><h2>Resultado do GA: " + best.getFitness() + "</h2></header>" + "<main>" +
+      "<section><h4>Detalhes</h4>" + "<p>Tempo de execução: " + history.getTimeExec() + " segundos</p>" + "<p>Taxa " + "de" + " reprodução: " + params.getReproductionRate() + " segundos</p>" + "<p>Modo de reprodução: " + params.getReproductionMode() + " segundos</p>" + "<p>População inicial: " + params.getPopulationLimit() + " segundos</p>" + "<p>Capacidade máxima da mochila: " + params.getStorageLimit() + " segundos</p>" + "<p>Modo de seleção: " + params.getSelectionMode() + " segundos</p>" + "<p>probabilidade de mutação: " + params.getProbabilityMutation() + " segundos</p>" + "<p>K: " + params.getK() + " segundos</p>" + "<p>Y: " + params.getY() + " segundos</p>" + "<p>M: " + params.getM() + " segundos</p>" + "<p>Ocorreu convergência nas gerações: " + history.getGeneticConvertion().stream().map(geneticHistory -> " " + geneticHistory.getGeneration()) + "</p>" + "<p><strong>Melhor fitness: " + best.getFitness() + "</strong> da geração #" + best.getGeneration() + " com peso total de " + best.getWeight() + " e " + best.getGenes().size() + " itens<p>" + "</section>" + "<section><h4>Melhor Individuo</h4><br><code>" + best.toHtml() + "</code></section>" + "</main>" + "</html>");
+    emailDTO.setAssunto("Resultado do algoritmo GA: " + best.getFitness());
     produtorServico.enviarEmail(emailDTO);
   }
 
@@ -368,7 +295,6 @@ public class GAService {
     //usando items iguais para validação
     List<Item> items = generateItems(paramsDTO.getItems());
     //gera a primeira geração de soluções
-
     List<Chromosome> population = generateFirstPopulation(paramsDTO.getPopulationLimit(), items,
       paramsDTO.getStorageLimit());
     evolutionHistory.getBests().add(evaluete(population).clone());
