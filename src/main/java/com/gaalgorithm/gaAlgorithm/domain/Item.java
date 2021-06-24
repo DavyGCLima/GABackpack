@@ -1,10 +1,7 @@
 package com.gaalgorithm.gaAlgorithm.domain;
 
 import com.opencsv.bean.CsvBindByName;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -29,12 +26,6 @@ public class Item implements Serializable {
 
   @CsvBindByName
   private Float coast;
-
-  public Item( float coast, float weight, float utility, Boolean used ) {
-    this.coast = coast;
-    this.weight = weight;
-    this.utility = utility;
-  }
 
   public String toHtml() {
     return "\"Item\": { \"id\":" + id + "\", coast\":" + coast + ", \"utility\":" + utility + ", \"weight\":" + weight + '}';

@@ -33,7 +33,7 @@ public class RequestParamsDTO implements Serializable {
   private List<Integer> bulkY;
   private Integer m;
   private List<Integer> bulkM;
-  private Optional<List<Item>> items;
+  private List<Item> items;
 
   public boolean checkBulkParams() {
     List<List<Integer>> checkList = new ArrayList<>();

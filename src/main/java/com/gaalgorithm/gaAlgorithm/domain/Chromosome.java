@@ -12,13 +12,16 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.fill;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @Slf4j
 @ToString
 public class Chromosome implements Serializable, Comparable {
-  private List<Item> genes = new ArrayList<>();
+  private List<Boolean> genes;
+  private List<Item> itemsRef;
   private int generation = 0;
   private float fitness = 0;
 
@@ -27,26 +30,31 @@ public class Chromosome implements Serializable, Comparable {
   }
 
   public Chromosome( List<Item> items ) {
-    Set<Integer> generated = new LinkedHashSet<>();
+    this.setGenes(new ArrayList<>(items.size()));
     java.util.Random random = new java.util.Random();
-    Item[] solution = new Item[items.size()];
-    for (int j = 0; j < 6; j++) {
-      // garante que não haja solução em que nenhum item seja utilizado
-      boolean has = Arrays.stream(solution).noneMatch(Objects::nonNull);
-      if (random.nextBoolean()) {
-        solution[j] = items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
-      } else if (has && j == 5) {
-        // caso a solução ainda não possua nenum item, adiciona um item aleatóriamente
-        solution[random.nextInt(solution.length)] =
-          items.get(com.gaalgorithm.gaAlgorithm.util.Random.getNextRandom(generated, 6, 6, random));
-      } else {
-        solution[j] = null;
-      }
+    for (int i = 0; i < items.size(); i++) {
+      this.getGenes().add(random.nextBoolean());
     }
-    for (Item item : solution) {
-      this.getGenes().add(item);
-    }
+    this.setItemsRef(items);
     this.setFitness(this.generateFitness());
+  }
+
+  public static Chromosome buildValidChromosome( List<Item> items, int sotorageLimit ) {
+    Chromosome chromosome = new Chromosome();
+    Boolean[] values = new Boolean[items.size()];
+    fill(values, Boolean.FALSE);
+    chromosome.setGenes(Arrays.stream(values).collect(Collectors.toList()));
+    chromosome.setItemsRef(items);
+    java.util.Random random = new java.util.Random();
+    Set<Integer> generated = new HashSet<>(items.size());
+    for (int i = 0; i < items.size(); i++) {
+      int target = Random.getNextInt(generated, items.size(), random);
+      if (chromosome.getWeight() + items.get(target).getWeight() > sotorageLimit) continue;
+      chromosome.getGenes().set(target, random.nextBoolean());
+    }
+
+    chromosome.setFitness(chromosome.generateFitness());
+    return chromosome;
   }
 
   /**
@@ -57,16 +65,11 @@ public class Chromosome implements Serializable, Comparable {
   public float generateFitness() {
     float result = 0;
     float totalWight = 0;
-    for (Item item : genes) {
-      if (item != null) {
-        result = result + (item.getUtility() / item.getCoast());
-        totalWight = totalWight + item.getWeight();
+    for (int i = 0; i < genes.size(); i++) {
+      if (genes.get(i)) {
+        result = result + (this.getItemsRef().get(i).getUtility() / this.getItemsRef().get(i).getCoast());
+        totalWight = totalWight + this.getItemsRef().get(i).getWeight();
       }
-    }
-    if (totalWight == 0) {
-      System.out.println("Problem here");
-      log.error("Weight 0, chromosome {} generation: {}", this, this.getGeneration());
-      return 0;
     }
     return result;
   }
@@ -78,8 +81,8 @@ public class Chromosome implements Serializable, Comparable {
    */
   public int getCountItemUsed() {
     int total = 0;
-    for (Item gene : this.getGenes()) {
-      if (gene != null) total++;
+    for (Boolean gene : this.getGenes()) {
+      if (gene) total++;
     }
     return total;
   }
@@ -90,10 +93,11 @@ public class Chromosome implements Serializable, Comparable {
    * @return O peso total
    */
   public float getWeight() {
+    if (genes == null || itemsRef == null) return 0;
     float totalWeight = 0;
-    for (Item item : genes) {
-      if (item != null) {
-        totalWeight = totalWeight + item.getWeight();
+    for (int i = 0; i < genes.size(); i++) {
+      if (genes.get(i)) {
+        totalWeight = totalWeight + this.itemsRef.get(i).getWeight();
       }
     }
     return totalWeight;
@@ -129,9 +133,9 @@ public class Chromosome implements Serializable, Comparable {
   public List<Chromosome> uniformCrossover( Chromosome parent, int generation ) {
     List<Chromosome> childrens = new ArrayList<>(2);
     List<Boolean> sortedList = Random.getRandomBooleanList(this.getGenes().size());
-    List<Item> genes1 = new ArrayList<>(this.getGenes().size());
-    List<Item> genes2 = new ArrayList<>(this.getGenes().size());
-    for (int i = 0; i < sortedList.size(); i++) {
+    List<Boolean> genes1 = new ArrayList<>(this.getGenes().size());
+    List<Boolean> genes2 = new ArrayList<>(this.getGenes().size());
+    for (int i = 0; i < (this.getGenes().size() - 1 / 2); i++) {
       boolean sorted = sortedList.get(i);
       if (sorted) {
         genes1.add(parent.getGenes().get(i));
@@ -149,12 +153,12 @@ public class Chromosome implements Serializable, Comparable {
       return this.uniformCrossover(parent, generation);
     }
 
-    Chromosome child = new Chromosome();
+    Chromosome child = new Chromosome(parent.getItemsRef());
     child.setGenes(genes1);
     child.setGeneration(generation);
     childrens.add(child);
 
-    Chromosome child2 = new Chromosome();
+    Chromosome child2 = new Chromosome(parent.getItemsRef());
     child2.setGenes(genes2);
     child2.setGeneration(generation);
     childrens.add(child2);
@@ -177,29 +181,39 @@ public class Chromosome implements Serializable, Comparable {
     int point1 = Random.getNextRandom(generated, this.getGenes().size() / 2, 1, 0, random);
     int point2 = Random.getNextRandom(generated, this.getGenes().size(), 2, point1, random);
 
-    List<Item> genes1 = new ArrayList<>(this.getGenes().size());
-    List<Item> genes2 = new ArrayList<>(this.getGenes().size());
+    List<Boolean> genes1 = new ArrayList<>(this.getGenes().size());
+    List<Boolean> genes2 = new ArrayList<>(this.getGenes().size());
 
-    genes1.addAll(this.getGenes().subList(0, point1));
-    genes1.addAll(parent.getGenes().subList(point1, point2));
-    genes1.addAll(this.getGenes().subList(point2, this.getGenes().size()));
+    if (point1 >= 0) System.arraycopy(this.getGenes(), 0, genes1, 0, point1);
+    if (point2 - point1 >= 0) System.arraycopy(parent.getGenes(), point1, genes1, point1, point2 - point1);
+    if (this.getGenes().size() - point2 >= 0)
+      System.arraycopy(this.getGenes(), point2, genes1, point2, this.getGenes().size() - point2);
 
-    genes2.addAll(parent.getGenes().subList(0, point1));
-    genes2.addAll(this.getGenes().subList(point1, point2));
-    genes2.addAll(parent.getGenes().subList(point2, this.getGenes().size()));
+    if (point1 >= 0) System.arraycopy(parent.getGenes(), 0, genes2, 0, point1);
+    if (point2 - point1 >= 0) System.arraycopy(this.getGenes(), point1, genes2, point1, point2 - point1);
+    if (this.getGenes().size() - point2 >= 0)
+      System.arraycopy(parent.getGenes(), point2, genes2, point2, this.getGenes().size() - point2);
 
     List<Chromosome> childrens = new ArrayList<>(2);
-    Chromosome chield1 = new Chromosome();
+    Chromosome chield1 = new Chromosome(parent.getItemsRef());
     chield1.setGeneration(generation);
     chield1.setGenes(genes1);
     childrens.add(chield1);
 
-    Chromosome chield2 = new Chromosome();
+    Chromosome chield2 = new Chromosome(parent.getItemsRef());
     chield2.setGeneration(generation);
     chield2.setGenes(genes2);
     childrens.add(chield2);
 
     return childrens;
+  }
+
+  public List<Integer> getItemsUsed() {
+    List<Integer> used = new ArrayList<>(this.getGenes().size());
+    for (int i = 0; i < this.getGenes().size(); i++) {
+      if(this.getGenes().get(i)) used.add(this.getItemsRef().get(i).getId());
+    }
+    return used;
   }
 
   @Override
@@ -227,6 +241,12 @@ public class Chromosome implements Serializable, Comparable {
   }
 
   public String toHtml() {
-    return "<pre>\"Chromosome\":{" + "\"genes\":" + "<br>" + genes.stream().filter(Objects::nonNull).map(item -> "  " + item.toHtml() + "<br>").collect(Collectors.toList()) + "<br>, \"generation\":" + generation + ", \"fitness\":" + fitness + "} </pre><br>";
+    List<Item> parsed = new ArrayList<>(this.getGenes().size());
+    for (int i = 0; i < this.genes.size(); i++) {
+      if (this.genes.get(i)) parsed.add(this.itemsRef.get(i));
+    }
+    return "<pre>\"Chromosome\":{" + "\"genes\":" + "<br>" + parsed.stream().filter(Objects::nonNull).map(item -> "  "
+      + item.toHtml() + "<br>").collect(Collectors.toList()) + "<br>, \"generation\":" + generation + ", \"fitness" +
+      "\":" + fitness + "} </pre><br>";
   }
 }
