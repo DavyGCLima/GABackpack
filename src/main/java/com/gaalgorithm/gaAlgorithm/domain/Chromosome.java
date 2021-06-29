@@ -24,6 +24,10 @@ public class Chromosome implements Serializable, Comparable {
   private List<Item> itemsRef;
   private int generation = 0;
   private float fitness = 0;
+  private float totalUtility = 0;
+  private float totalCost = 0;
+  private float deltaUtility = 0;
+  private float deltaCost = 0;
 
   public Chromosome clone() {
     return SerializationUtils.clone(this);
@@ -37,6 +41,8 @@ public class Chromosome implements Serializable, Comparable {
     }
     this.setItemsRef(items);
     this.setFitness(this.generateFitness());
+    this.calcTotalCost();
+    this.calcTotalUtility();
   }
 
   public static Chromosome buildValidChromosome( List<Item> items, int sotorageLimit ) {
@@ -54,24 +60,43 @@ public class Chromosome implements Serializable, Comparable {
     }
 
     chromosome.setFitness(chromosome.generateFitness());
+    chromosome.calcTotalCost();
+    chromosome.calcTotalUtility();
     return chromosome;
   }
 
   /**
-   * Função Objetivo
+   * Função Objetivo geral
    *
    * @return retorna o valor deste individuo
    */
   public float generateFitness() {
     float result = 0;
-    float totalWight = 0;
     for (int i = 0; i < genes.size(); i++) {
       if (genes.get(i)) {
-        result = result + (this.getItemsRef().get(i).getUtility() / this.getItemsRef().get(i).getCoast());
-        totalWight = totalWight + this.getItemsRef().get(i).getWeight();
+        result += (this.getItemsRef().get(i).getUtility() / this.getItemsRef().get(i).getCoast());
       }
     }
+    this.fitness = result;
     return result;
+  }
+
+  public float calcTotalUtility() {
+    float total = 0;
+    for (int i = 0; i < this.genes.size(); i++) {
+      if(this.genes.get(i)) total += this.itemsRef.get(i).getUtility();
+    }
+    this.totalUtility = total;
+    return total;
+  }
+
+  public float calcTotalCost() {
+    float total = 0;
+    for (int i = 0; i < this.genes.size(); i++) {
+      if(this.genes.get(i)) total += this.itemsRef.get(i).getCoast();
+    }
+    this.totalCost = total;
+    return total;
   }
 
   /**
@@ -233,12 +258,16 @@ public class Chromosome implements Serializable, Comparable {
   public int compareTo( Object o ) {
     if (o instanceof Chromosome) {
       Chromosome c = (Chromosome) o;
-      c.setFitness(c.generateFitness());
+      c.generateFitness();
       this.setFitness(this.generateFitness());
       return Float.compare(c.getFitness(), this.getFitness());
     }
     return 0;
   }
+
+  public static final Comparator<Chromosome> BY_UTILITY = ( o1, o2 ) -> Float.compare(o1.calcTotalUtility(), o2.calcTotalUtility());
+
+  public static final Comparator<Chromosome> BY_COST = ( o1, o2 ) -> Float.compare(o1.calcTotalCost(), o2.calcTotalCost());
 
   public String toHtml() {
     List<Item> parsed = new ArrayList<>(this.getGenes().size());

@@ -30,7 +30,8 @@ public class GAResource {
                      @RequestParam(name = "selectionMode") int selectionMode,
                      @RequestParam(name = "reproductionMode") int reproductionMode, @RequestParam(name = "email",
     required = false) Optional<String> email, @RequestPart(name = "file", required = false) MultipartFile file,
-                     @RequestParam Integer k, @RequestParam Integer y, @RequestParam Integer m ) {
+                     @RequestParam Integer k, @RequestParam Integer y, @RequestParam Integer m,
+                     @RequestParam(defaultValue = "false") Boolean nsga ) {
     RequestParamsDTO paramsDTO = new RequestParamsDTO();
     paramsDTO.setReproductionMode(reproductionMode);
     paramsDTO.setReproductionRate(reproductionRate);
@@ -42,18 +43,21 @@ public class GAResource {
     paramsDTO.setK(k);
     paramsDTO.setY(y);
     paramsDTO.setM(m);
+    paramsDTO.setNsga(nsga);
     produtorServico.initialize(paramsDTO, file);
     return "Aguarde o resultado em seu email";
   }
 
-  @PostMapping(path = "/bulk", consumes = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE,
-    MediaType.APPLICATION_JSON_VALUE})
-  public String runBulkTest( @RequestParam List<Integer> reproductionRate, @RequestParam List<Integer> probabilityMutation,
+  @PostMapping(path = "/bulk", consumes = {MediaType.APPLICATION_OCTET_STREAM_VALUE,
+    MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public String runBulkTest( @RequestParam List<Integer> reproductionRate,
+                             @RequestParam List<Integer> probabilityMutation,
                              @RequestParam List<Integer> populationLimit, @RequestParam List<Integer> storageLimit,
                              @RequestParam List<Integer> selectionMode, @RequestParam List<Integer> reproductionMode,
                              @RequestParam(required = false) Optional<String> email,
                              @RequestPart(required = false) MultipartFile file, @RequestParam List<Integer> k,
-                             @RequestParam List<Integer> y, @RequestParam List<Integer> m ) {
+                             @RequestParam List<Integer> y, @RequestParam List<Integer> m,
+                             @RequestParam(defaultValue = "false") Boolean nsga ) {
 
     RequestParamsDTO paramsDTO = new RequestParamsDTO();
     paramsDTO.setBulkReproductionMode(reproductionMode);
@@ -66,7 +70,8 @@ public class GAResource {
     paramsDTO.setBulkK(k);
     paramsDTO.setBulkY(y);
     paramsDTO.setBulkM(m);
-    if(paramsDTO.checkBulkParams()) {
+    paramsDTO.setNsga(nsga);
+    if (paramsDTO.checkBulkParams()) {
       return "Parametros não combinam";
     }
     produtorServico.bulkInitialize(paramsDTO, file);

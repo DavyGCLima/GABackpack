@@ -43,7 +43,7 @@ public class GAService {
     log.info("Gerando primeira população");
     List<Chromosome> population = new ArrayList<>(populationLimit);
     for (int i = 0; i < populationLimit; i++) {
-      if(i <= 0.66 * populationLimit) {
+      if (i <= 0.66 * populationLimit) {
         population.add(Chromosome.buildValidChromosome(items, storageLimit));
         continue;
       }
@@ -238,8 +238,12 @@ public class GAService {
     removeInvalidChromossomes(population, params.getStorageLimit());
     log.info("Adicionando {} filhos", childrens.size());
     population.addAll(childrens);
-    evaluete(population);
-    population = killWorstChromossomes(population, params.getPopulationLimit() * 2);
+    if (params.getNsga()) {
+      nsga(population);
+    } else {
+      evaluete(population);
+      population = killWorstChromossomes(population, params.getPopulationLimit() * 2);
+    }
     evolutionHistory.getBests().add(evaluete(population).clone());
     log.info("Evoluindo população");
     log.info(
@@ -262,7 +266,8 @@ public class GAService {
     history.setBest(best);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
-    log.info("Ocorreu convergencia em: {}", history.getGeneticConvertion().stream().map(GeneticConvertionHistory::getGeneration));
+    log.info("Ocorreu convergencia em: {}",
+      history.getGeneticConvertion().stream().map(GeneticConvertionHistory::getGeneration).collect(Collectors.toList()));
     log.info("Itens usados: {}", best.getItemsUsed());
     enviarEmail(email, best, history);
   }
@@ -340,4 +345,47 @@ public class GAService {
     return null;
   }
 
+  private List<List<Chromosome>> groupByDominance( List<Chromosome> population ) {
+    List<Chromosome> notDominated = new ArrayList<>(population.size() / 3);
+    List<Chromosome> partialDominated = new ArrayList<>(population.size() / 3);
+    List<Chromosome> dominated = new ArrayList<>(population.size() / 3);
+    for (Chromosome actual : population) {
+      if (population.stream().noneMatch(chromosome -> chromosome.getTotalCost() < actual.getTotalCost() && chromosome.getTotalUtility() > actual.getTotalUtility()))
+        notDominated.add(actual);
+      else if (population.stream().noneMatch(chromosome -> chromosome.getTotalCost() < actual.getTotalCost() || chromosome.getTotalUtility() > actual.getTotalUtility()))
+        partialDominated.add(actual);
+      else dominated.add(actual);
+    }
+    log.info("Quantiudade de individuos não dominados: {}", notDominated.size());
+    List<List<Chromosome>> fronts = new ArrayList<>(3);
+    fronts.add(notDominated);
+    fronts.add(partialDominated);
+    fronts.add(dominated);
+    return fronts;
+  }
+
+  private void calculateCrowdingDistance( List<Chromosome> front ) {
+    front.sort(Chromosome.BY_UTILITY);
+    for (int i = 0; i < front.size(); i++) {
+      if (i == 0)
+        front.get(i).setDeltaUtility(front.get(i + 1).getTotalUtility() / (front.get(0).getTotalUtility() - front.get(front.size()).getTotalUtility()));
+      if (i == front.size())
+        front.get(i).setDeltaUtility(front.get(i - 1).getTotalUtility() / (front.get(0).getTotalUtility() - front.get(front.size()).getTotalUtility()));
+      else
+        front.get(i).setDeltaUtility(front.get(i - 1).getTotalUtility() - front.get(i + 1).getTotalUtility() / (front.get(0).getTotalUtility() - front.get(front.size()).getTotalUtility()));
+    }
+    front.sort(Chromosome.BY_COST);
+    for (int i = 0; i < front.size(); i++) {
+      if (i == 0)
+        front.get(i).setDeltaCost(front.get(i + 1).getTotalCost() / (front.get(0).getTotalCost() - front.get(front.size()).getTotalCost()));
+      if (i == front.size())
+        front.get(i).setDeltaCost(front.get(i - 1).getTotalCost() / (front.get(0).getTotalCost() - front.get(front.size()).getTotalCost()));
+      else
+        front.get(i).setDeltaCost(front.get(i - 1).getTotalCost() - front.get(i + 1).getTotalCost() / (front.get(0).getTotalCost() - front.get(front.size()).getTotalCost()));
+    }
+  }
+
+  private void nsga( List<Chromosome> population ) {
+    List<List<Chromosome>> fronts = groupByDominance(population);
+  }
 }

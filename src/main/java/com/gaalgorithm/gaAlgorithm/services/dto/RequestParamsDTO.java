@@ -34,6 +34,7 @@ public class RequestParamsDTO implements Serializable {
   private Integer m;
   private List<Integer> bulkM;
   private List<Item> items;
+  private Boolean nsga;
 
   public boolean checkBulkParams() {
     List<List<Integer>> checkList = new ArrayList<>();
