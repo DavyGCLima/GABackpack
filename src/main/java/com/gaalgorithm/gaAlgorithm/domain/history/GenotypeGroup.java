@@ -1,5 +1,6 @@
-package com.gaalgorithm.gaAlgorithm.domain;
+package com.gaalgorithm.gaAlgorithm.domain.history;
 
+import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

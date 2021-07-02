@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @ToString
-public class GeneticConvertionHistory {
-  List<GenotypeGroup> genotypeGroups = new ArrayList<>();
-  Integer generation;
+public class DominanceHistory {
+  List<ParetoFrontHistory> history = new ArrayList<>();
+  int generation;
 }

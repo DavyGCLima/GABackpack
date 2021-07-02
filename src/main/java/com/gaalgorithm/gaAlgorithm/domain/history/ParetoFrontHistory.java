@@ -1,5 +1,6 @@
 package com.gaalgorithm.gaAlgorithm.domain.history;
 
+import com.gaalgorithm.gaAlgorithm.domain.Chromosome;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,7 +13,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @ToString
-public class GeneticConvertionHistory {
-  List<GenotypeGroup> genotypeGroups = new ArrayList<>();
-  Integer generation;
+public class ParetoFrontHistory {
+  List<Chromosome> front = new ArrayList<>();
+  Chromosome best;
+  float crowdingDistance;
 }

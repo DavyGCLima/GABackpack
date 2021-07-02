@@ -269,6 +269,8 @@ public class Chromosome implements Serializable, Comparable {
 
   public static final Comparator<Chromosome> BY_COST = ( o1, o2 ) -> Float.compare(o1.calcTotalCost(), o2.calcTotalCost());
 
+  public static final Comparator<Chromosome> BY_CROWDING_DISTANCE = ( o1, o2 ) -> Float.compare(o1.getDeltaCost() + o1.getDeltaUtility(), o2.getDeltaCost() + o2.getDeltaUtility());
+
   public String toHtml() {
     List<Item> parsed = new ArrayList<>(this.getGenes().size());
     for (int i = 0; i < this.genes.size(); i++) {
