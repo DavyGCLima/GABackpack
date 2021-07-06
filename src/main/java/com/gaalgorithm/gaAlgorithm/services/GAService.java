@@ -300,6 +300,8 @@ public class GAService {
   }
 
   private void findResultNSGA( List<Chromosome> population, String email, History history ) {
+    long endTime = System.nanoTime();
+    history.setTimeExec((double) (endTime - execTime) / 1_000_000_000);
     findResultBorder(population, email, history);
     findResultAHP(population, email, history);
   }
@@ -418,15 +420,15 @@ public class GAService {
         "<main" +
         ">" +
         "<section><h4>Detalhes</h4>" + "<p>Tempo de execução: " + history
-        .getTimeExec() + " segundos</p>" + "<p>Taxa " + "de" + " reprodução: " + params
-        .getReproductionRate() + " segundos</p>" + "<p>Modo de reprodução: " + params
-        .getReproductionMode() + " segundos</p>" + "<p>População inicial: " + params
-        .getPopulationLimit() + " segundos</p>" + "<p>Capacidade máxima da mochila: " + params
-        .getStorageLimit() + " segundos</p>" + "<p>Modo de seleção: " + params
-        .getSelectionMode() + " segundos</p>" + "<p>probabilidade de mutação: " + params
-        .getProbabilityMutation() + " segundos</p>" + "<p>K: " + params.getK() + " segundos</p>" + "<p>Y: " + params
-        .getY() + " segundos</p>" + "<p>M: " + params
-        .getM() + " segundos</p>" + "<p>Ocorreu convergência nas gerações: " + history.getGeneticConvertion().stream()
+        .getTimeExec() + " segundos</p>" + "<p>Taxa de reprodução: " + params
+        .getReproductionRate() + "%</p>" + "<p>Modo de reprodução: " + params
+        .getReproductionMode() + "</p>" + "<p>População: " + params
+        .getPopulationLimit() + "</p>" + "<p>Capacidade máxima da mochila: " + params
+        .getStorageLimit() + "</p>" + "<p>Modo de seleção: " + params
+        .getSelectionMode() + "</p>" + "<p>probabilidade de mutação: " + params
+        .getProbabilityMutation() + "%</p>" + "<p>K: " + params.getK() + "</p>" + "<p>Y: " + params
+        .getY() + "</p>" + "<p>M: " + params
+        .getM() + "</p>" + "<p>Ocorreu convergência nas gerações: " + history.getGeneticConvertion().stream()
         .map(geneticHistory -> " " + geneticHistory.getGeneration()) + "</p>" + "<p><strong>Melhor fitness: " + best
         .getFitness() + "</strong> da geração #" + best.getGeneration() + " com peso total de " + best
         .getWeight() + "<p>custo de:" + best.getTotalCost() + " </p>" + "<p>utilidade de: " + best
