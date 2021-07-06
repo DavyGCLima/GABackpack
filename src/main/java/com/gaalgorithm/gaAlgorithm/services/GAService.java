@@ -34,6 +34,8 @@ public class GAService {
   private RequestParamsDTO params;
   private History evolutionHistory = new History();
   private final int totalgeneration = 1000;
+  private final String AHP = "multi-critério método AHP";
+  private final String BORDER = "multi-critério método Borda";
 
   private List<Item> generateItems( List<Item> items ) {
     if (defaultItems.size() > 0) return defaultItems;
@@ -190,7 +192,11 @@ public class GAService {
       }
     }
     log.info("Reprodução terminada, quantidade de filhos: {}", childrens.size());
-    childrens.forEach(chromosome -> chromosome.setFitness(chromosome.generateFitness()));
+    for (Chromosome chromosome : childrens) {
+      chromosome.setFitness(chromosome.generateFitness());
+      chromosome.calcTotalCost();
+      chromosome.calcTotalUtility();
+    }
     evaluete(childrens);
     return childrens;
   }
@@ -210,10 +216,12 @@ public class GAService {
     for (Chromosome selectedToMutate : mutableList) {
       int sorted = random.nextInt(100);
       if (sorted > prob) {
-        for (int j = 0; j < (0.5 * selectedToMutate.getGenes().size()); j++) {
+        for (int j = 0; j < (0.01 * selectedToMutate.getGenes().size()); j++) {
           int index = random.nextInt(selectedToMutate.getGenes().size());
           selectedToMutate.getGenes().set(index, !selectedToMutate.getGenes().get(index));
           selectedToMutate.setFitness(selectedToMutate.generateFitness());
+          selectedToMutate.calcTotalUtility();
+          selectedToMutate.calcTotalCost();
         }
       }
     }
@@ -277,10 +285,10 @@ public class GAService {
     history.setTimeExec((double) (endTime - execTime) / 1_000_000_000);
     log.info("Fim do GA, geração: {}, tempo de execução: {}", generation, history.getTimeExec());
     Chromosome best = evaluete(population);
-    getResultGA(best, email, history);
+    getResultGA(best, email, history, "método comum");
   }
 
-  private void getResultGA( Chromosome best, String email, History history ) {
+  private void getResultGA( Chromosome best, String email, History history, String method ) {
     history.setBest(best);
     log.info("Melhor individuo: {} da geração #{} com peso total de {} e {} itens", best.getFitness(),
       best.getGeneration(), best.getWeight(), best.getCountItemUsed());
@@ -288,10 +296,70 @@ public class GAService {
       history.getGeneticConvertion().stream().map(GeneticConvertionHistory::getGeneration)
         .collect(Collectors.toList()));
     log.info("Itens usados: {}", best.getItemsUsed());
-    enviarEmail(email, best, history);
+    enviarEmail(email, best, history, method);
   }
 
   private void findResultNSGA( List<Chromosome> population, String email, History history ) {
+    findResultBorder(population, email, history);
+    findResultAHP(population, email, history);
+  }
+
+  private void findResultAHP( List<Chromosome> population, String email, History history ) {
+    log.info("Buscando resultador por metodo de AHP");
+
+    List<List<Chromosome>> fronts = groupByDominance(population);
+    List<Chromosome> selected = new ArrayList<>();
+    for (List<Chromosome> front : fronts) {
+      if (front.size() > 0) {
+        selected = front;
+        break;
+      }
+    }
+
+    List<List<Float>> judgeMatrix = new ArrayList<>();
+
+    // Preenche a matriz de julgamento
+    List<Float> utility = new ArrayList<>(2);
+    utility.add(1F); // utility | utility
+    utility.add(5F); // utility | cost
+    judgeMatrix.add(utility);
+    List<Float> cost = new ArrayList<>(2);
+    cost.add(1 / utility.get(1)); // cost | utility
+    cost.add(1F); // cost | cost
+    judgeMatrix.add(cost);
+
+    List<List<Float>> normalized = new ArrayList<>(4);
+    for (int i = 0; i < judgeMatrix.size(); i++) {
+      List<Float> line = judgeMatrix.get(i);
+      normalized.add(new ArrayList<>());
+      for (int i1 = 0; i1 < line.size(); i1++) {
+        Float item = line.get(i1);
+        normalized.get(i).add(
+          item / line.stream().reduce(0F, Float::sum));
+      }
+    }
+
+    List<Float> criteria = new ArrayList<>(2);
+    for (List<Float> line : normalized) {
+      criteria.add(line.stream().reduce(0F, Float::sum));
+    }
+
+    List<Chromosome> result = new ArrayList<>(selected.size());
+    for (int i = 0; i < selected.size(); i++) {
+      Chromosome actual = selected.get(i);
+      float totalCost = actual.getTotalCost() * criteria.get(1);
+      float totalUtil = actual.getTotalUtility() * criteria.get(0);
+      actual.setFitness(totalUtil + totalCost);
+      result.add(actual);
+    }
+    result.sort(( o1, o2 ) -> Float.compare(o2.getFitness(), o1.getFitness()));
+    Chromosome best = result.get(0);
+    history.setBest(best);
+    getResultGA(best, email, history, AHP);
+  }
+
+  private void findResultBorder( List<Chromosome> population, String email, History history ) {
+    log.info("Buscando resultador por metodo de BORDA");
     List<List<Chromosome>> fronts = groupByDominance(population);
     List<Chromosome> selected = new ArrayList<>();
     for (List<Chromosome> front : fronts) {
@@ -323,7 +391,7 @@ public class GAService {
     totalList.sort(Comparator.comparingInt(BorderMethod::getPoints));
     Chromosome best = totalList.get(0).getChromosome();
     history.setBest(best);
-    getResultGA(best, email, history);
+    getResultGA(best, email, history, BORDER);
   }
 
   private void addToBorderList( List<Chromosome> selected, List<BorderMethod> borderMethodList ) {
@@ -342,25 +410,29 @@ public class GAService {
    * @param best    melhor solução
    * @param history histórico
    */
-  private void enviarEmail( String email, Chromosome best, History history ) {
+  private void enviarEmail( String email, Chromosome best, History history, String method ) {
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
-    emailDTO.setCorpo("<html>" + "<header><h2>Resultado do GA: " + best.getFitness() + "</h2></header>" + "<main>" +
-      "<section><h4>Detalhes</h4>" + "<p>Tempo de execução: " + history
-      .getTimeExec() + " segundos</p>" + "<p>Taxa " + "de" + " reprodução: " + params
-      .getReproductionRate() + " segundos</p>" + "<p>Modo de reprodução: " + params
-      .getReproductionMode() + " segundos</p>" + "<p>População inicial: " + params
-      .getPopulationLimit() + " segundos</p>" + "<p>Capacidade máxima da mochila: " + params
-      .getStorageLimit() + " segundos</p>" + "<p>Modo de seleção: " + params
-      .getSelectionMode() + " segundos</p>" + "<p>probabilidade de mutação: " + params
-      .getProbabilityMutation() + " segundos</p>" + "<p>K: " + params.getK() + " segundos</p>" + "<p>Y: " + params
-      .getY() + " segundos</p>" + "<p>M: " + params
-      .getM() + " segundos</p>" + "<p>Ocorreu convergência nas gerações: " + history.getGeneticConvertion().stream()
-      .map(geneticHistory -> " " + geneticHistory.getGeneration()) + "</p>" + "<p><strong>Melhor fitness: " + best
-      .getFitness() + "</strong> da geração #" + best.getGeneration() + " com peso total de " + best
-      .getWeight() + " e " + best.getGenes()
-      .size() + " itens<p>" + "</section>" + "<section><h4>Melhor Individuo</h4><br><code>" + best
-      .toHtml() + "</code></section>" + "</main>" + "</html>");
+    emailDTO
+      .setCorpo("<html>" + "<header><h2>Resultado do GA por " + method + ": " + best.getFitness() + "</h2></header>" +
+        "<main" +
+        ">" +
+        "<section><h4>Detalhes</h4>" + "<p>Tempo de execução: " + history
+        .getTimeExec() + " segundos</p>" + "<p>Taxa " + "de" + " reprodução: " + params
+        .getReproductionRate() + " segundos</p>" + "<p>Modo de reprodução: " + params
+        .getReproductionMode() + " segundos</p>" + "<p>População inicial: " + params
+        .getPopulationLimit() + " segundos</p>" + "<p>Capacidade máxima da mochila: " + params
+        .getStorageLimit() + " segundos</p>" + "<p>Modo de seleção: " + params
+        .getSelectionMode() + " segundos</p>" + "<p>probabilidade de mutação: " + params
+        .getProbabilityMutation() + " segundos</p>" + "<p>K: " + params.getK() + " segundos</p>" + "<p>Y: " + params
+        .getY() + " segundos</p>" + "<p>M: " + params
+        .getM() + " segundos</p>" + "<p>Ocorreu convergência nas gerações: " + history.getGeneticConvertion().stream()
+        .map(geneticHistory -> " " + geneticHistory.getGeneration()) + "</p>" + "<p><strong>Melhor fitness: " + best
+        .getFitness() + "</strong> da geração #" + best.getGeneration() + " com peso total de " + best
+        .getWeight() + "<p>custo de:" + best.getTotalCost() + " </p>" + "<p>utilidade de: " + best
+        .getDeltaUtility() + " </p>" + " e " + best.getGenes()
+        .size() + " itens<p>" + "</section>" + "<section><h4>Melhor Individuo</h4><br><code>" + best
+        .toHtml() + "</code></section>" + "</main>" + "</html>");
     emailDTO.setAssunto("Resultado do algoritmo GA: " + best.getFitness());
     produtorServico.enviarEmail(emailDTO);
   }
@@ -440,6 +512,9 @@ public class GAService {
       else dominated.add(actual);
     }
     log.info("Quantidade de individuos não dominados: {}", notDominated.size());
+    log.info("Quantidade de individuos não parcialmente dominados: {}", partialDominated.size());
+    log.info("Quantidade de individuos não completamente dominados: {}", dominated.size());
+    log.info("Quantidade de individuos não inv[alidos: {}", invalids.size());
     List<List<Chromosome>> fronts = new ArrayList<>(3);
     dominated.addAll(invalids);
     fronts.add(notDominated);
@@ -482,9 +557,12 @@ public class GAService {
   }
 
   private void killByDominance( List<List<Chromosome>> fronts, List<Chromosome> population ) {
+    log.info("Eliminando individuos por dominancia");
+    int prev = population.size();
     List<Chromosome> newPopulation = new ArrayList<>(params.getPopulationLimit() * 2);
     fronts.forEach(newPopulation::addAll);
     population.retainAll(newPopulation.subList(0, params.getPopulationLimit()));
+    log.info("{} Individuos elimados", prev - population.size());
   }
 
   private void nsga( List<Chromosome> population, int generation ) {

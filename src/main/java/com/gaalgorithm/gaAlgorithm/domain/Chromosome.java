@@ -265,11 +265,14 @@ public class Chromosome implements Serializable, Comparable {
     return 0;
   }
 
-  public static final Comparator<Chromosome> BY_UTILITY = ( o1, o2 ) -> Float.compare(o1.calcTotalUtility(), o2.calcTotalUtility());
+  public static final Comparator<Chromosome> BY_UTILITY = ( o1, o2 ) -> Float.compare(o2.calcTotalUtility(),
+    o1.calcTotalUtility());
 
-  public static final Comparator<Chromosome> BY_COST = ( o1, o2 ) -> Float.compare(o1.calcTotalCost(), o2.calcTotalCost());
+  public static final Comparator<Chromosome> BY_COST = ( o1, o2 ) -> Float.compare(o2.calcTotalCost(),
+    o1.calcTotalCost());
 
-  public static final Comparator<Chromosome> BY_CROWDING_DISTANCE = ( o1, o2 ) -> Float.compare(o1.getDeltaCost() + o1.getDeltaUtility(), o2.getDeltaCost() + o2.getDeltaUtility());
+  public static final Comparator<Chromosome> BY_CROWDING_DISTANCE =
+    ( o1, o2 ) -> Float.compare(o2.getDeltaCost() + o2.getDeltaUtility(), o1.getDeltaCost() + o1.getDeltaUtility());
 
   public String toHtml() {
     List<Item> parsed = new ArrayList<>(this.getGenes().size());
@@ -278,6 +281,6 @@ public class Chromosome implements Serializable, Comparable {
     }
     return "<pre>\"Chromosome\":{" + "\"genes\":" + "<br>" + parsed.stream().filter(Objects::nonNull).map(item -> "  "
       + item.toHtml() + "<br>").collect(Collectors.toList()) + "<br>, \"generation\":" + generation + ", \"fitness" +
-      "\":" + fitness + "} </pre><br>";
+      "\":" + fitness + "},\" totalCost\": {"+totalCost+"}, \"totalUtil\": {"+totalUtility+"} </pre><br>";
   }
 }
