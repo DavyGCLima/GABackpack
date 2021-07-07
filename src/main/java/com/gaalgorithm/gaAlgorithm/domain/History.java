@@ -18,6 +18,7 @@ public class History {
   List<Chromosome> bests = new ArrayList<>();
   List<GeneticConvertionHistory> geneticConvertion = new ArrayList<>();
   List<DominanceHistory> dominanceHistories = new ArrayList<>();
+  List<Chromosome> paretoFront = new ArrayList<>();
   Double timeExec = 0D;
   Chromosome best;
 }

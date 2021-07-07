@@ -302,13 +302,6 @@ public class GAService {
   private void findResultNSGA( List<Chromosome> population, String email, History history ) {
     long endTime = System.nanoTime();
     history.setTimeExec((double) (endTime - execTime) / 1_000_000_000);
-    findResultBorder(population, email, history);
-    findResultAHP(population, email, history);
-  }
-
-  private void findResultAHP( List<Chromosome> population, String email, History history ) {
-    log.info("Buscando resultador por metodo de AHP");
-
     List<List<Chromosome>> fronts = groupByDominance(population);
     List<Chromosome> selected = new ArrayList<>();
     for (List<Chromosome> front : fronts) {
@@ -317,7 +310,13 @@ public class GAService {
         break;
       }
     }
+    history.setParetoFront(selected);
+    findResultBorder(email, history, selected);
+    findResultAHP(email, history, selected);
+  }
 
+  private void findResultAHP( String email, History history, List<Chromosome> selected ) {
+    log.info("Buscando resultador por metodo de AHP");
     List<List<Float>> judgeMatrix = new ArrayList<>();
 
     // Preenche a matriz de julgamento
@@ -360,16 +359,9 @@ public class GAService {
     getResultGA(best, email, history, AHP);
   }
 
-  private void findResultBorder( List<Chromosome> population, String email, History history ) {
+  private void findResultBorder( String email, History history, List<Chromosome> selected ) {
     log.info("Buscando resultador por metodo de BORDA");
-    List<List<Chromosome>> fronts = groupByDominance(population);
-    List<Chromosome> selected = new ArrayList<>();
-    for (List<Chromosome> front : fronts) {
-      if (front.size() > 0) {
-        selected = front;
-        break;
-      }
-    }
+
     selected.sort(Chromosome.BY_COST);
     List<BorderMethod> costList = new ArrayList<>(selected.size());
     addToBorderList(selected, costList);
@@ -413,6 +405,7 @@ public class GAService {
    * @param history histórico
    */
   private void enviarEmail( String email, Chromosome best, History history, String method ) {
+    best.generateFitness();
     EmailDTO emailDTO = new EmailDTO();
     emailDTO.setDestinatario(email);
     emailDTO
@@ -434,7 +427,12 @@ public class GAService {
         .getWeight() + "<p>custo de:" + best.getTotalCost() + " </p>" + "<p>utilidade de: " + best
         .getDeltaUtility() + " </p>" + " e " + best.getGenes()
         .size() + " itens<p>" + "</section>" + "<section><h4>Melhor Individuo</h4><br><code>" + best
-        .toHtml() + "</code></section>" + "</main>" + "</html>");
+        .toHtml() + "</code></section>" +
+        "<section><h4>Frente de pareto</h4><code>" +
+        history.getParetoFront().stream().map(chromosome -> "&ensp; <p>" + chromosome.toHtml() + "<br></p>")
+          .collect(Collectors.toList())
+        + "</code></section>"
+        + "</main>" + "</html>");
     emailDTO.setAssunto("Resultado do algoritmo GA: " + best.getFitness());
     produtorServico.enviarEmail(emailDTO);
   }
@@ -496,6 +494,13 @@ public class GAService {
     return null;
   }
 
+  /**
+   * Agrupo por dominancia os individuos <br>
+   * Individuos com menor grau de dominacia vem em primeiro
+   *
+   * @param population População a ser analisada
+   * @return A população organizadas em grupos de dominancia
+   */
   private List<List<Chromosome>> groupByDominance( List<Chromosome> population ) {
     List<Chromosome> notDominated = new ArrayList<>(population.size() / 3);
     List<Chromosome> partialDominated = new ArrayList<>(population.size() / 3);
@@ -525,6 +530,12 @@ public class GAService {
     return fronts;
   }
 
+  /**
+   * Calcula a distancia entre os individuos nos objetivos
+   *
+   * @param front Conjunto de individuos a serem analisados
+   * @return O individuo com a maior distancia entre os objetivos no grupo
+   */
   private Chromosome calculateCrowdingDistance( List<Chromosome> front ) {
     if (front.size() == 1) return front.get(0);
     front.sort(Chromosome.BY_UTILITY);
@@ -558,6 +569,13 @@ public class GAService {
     return front.stream().max(Chromosome.BY_CROWDING_DISTANCE).get();
   }
 
+  /**
+   * Elimina métade da popualção com a dominancia como primeiro critério e pela distancia entre  eles sendo o segundo
+   * critério
+   *
+   * @param fronts     Grupos a serem analisqados
+   * @param population População a ser limpa
+   */
   private void killByDominance( List<List<Chromosome>> fronts, List<Chromosome> population ) {
     log.info("Eliminando individuos por dominancia");
     int prev = population.size();
@@ -567,6 +585,12 @@ public class GAService {
     log.info("{} Individuos elimados", prev - population.size());
   }
 
+  /**
+   * Algoritimo de análise multicritério para evolução da popualção
+   *
+   * @param population População a ser analisada
+   * @param generation Geração atual
+   */
   private void nsga( List<Chromosome> population, int generation ) {
     DominanceHistory dominanceHistory = new DominanceHistory();
     dominanceHistory.setGeneration(generation);

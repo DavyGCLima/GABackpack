@@ -84,7 +84,7 @@ public class Chromosome implements Serializable, Comparable {
   public float calcTotalUtility() {
     float total = 0;
     for (int i = 0; i < this.genes.size(); i++) {
-      if(this.genes.get(i)) total += this.itemsRef.get(i).getUtility();
+      if (this.genes.get(i)) total += this.itemsRef.get(i).getUtility();
     }
     this.totalUtility = total;
     return total;
@@ -93,7 +93,7 @@ public class Chromosome implements Serializable, Comparable {
   public float calcTotalCost() {
     float total = 0;
     for (int i = 0; i < this.genes.size(); i++) {
-      if(this.genes.get(i)) total += this.itemsRef.get(i).getCoast();
+      if (this.genes.get(i)) total += this.itemsRef.get(i).getCoast();
     }
     this.totalCost = total;
     return total;
@@ -236,7 +236,7 @@ public class Chromosome implements Serializable, Comparable {
   public List<Integer> getItemsUsed() {
     List<Integer> used = new ArrayList<>(this.getGenes().size());
     for (int i = 0; i < this.getGenes().size(); i++) {
-      if(this.getGenes().get(i)) used.add(this.getItemsRef().get(i).getId());
+      if (this.getGenes().get(i)) used.add(this.getItemsRef().get(i).getId());
     }
     return used;
   }
@@ -281,6 +281,9 @@ public class Chromosome implements Serializable, Comparable {
     }
     return "<pre>\"Chromosome\":{" + "\"genes\":" + "<br>" + parsed.stream().filter(Objects::nonNull).map(item -> "  "
       + item.toHtml() + "<br>").collect(Collectors.toList()) + "<br>, \"generation\":" + generation + ", \"fitness" +
-      "\":" + fitness + "},\" totalCost\": {"+totalCost+"}, \"totalUtil\": {"+totalUtility+"} </pre><br>";
+      "\":" + fitness + "},\" totalCost\": {" + totalCost + "}, \"totalUtil\": {" + totalUtility + "}, \"deltaCost\":" +
+      " {" + deltaCost +
+      "}, \"deltaUtility\": {" + deltaUtility + "}" +
+      "</pre><br>";
   }
 }
